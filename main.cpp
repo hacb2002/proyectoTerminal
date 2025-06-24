@@ -7,7 +7,6 @@ int main( ) {
    std::string entrada;
    std::getline(std::cin, entrada, '\0');
    entrada += '\0';
-
    std::vector<token> tokens = lexer(entrada);
    // arbol_sintaxis arbol = parser(tokens);
    // tabla_simbolos tabla = semantico(arbol);
@@ -16,4 +15,9 @@ int main( ) {
    // for (const auto& s : instrucciones) {
    //    std::cout << s << "\n";
    // }
+   for(auto const& token: tokens){
+      std::cout << token.tipo << " " << std::string(token.ini, token.fin) << "\n";
+   }
+   /*
+   */
 }
