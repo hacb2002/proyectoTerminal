@@ -44,6 +44,7 @@ enum lexema {
    EXIT,
    IDENTIFICADOR,
    LITERAL_ENTERA,
+   LITERAL_CHAR,
    FIN_ARCHIVO
 };
 
@@ -131,11 +132,23 @@ bool es_entero(const char*& ini){
    return false;
 }
 
+bool es_caracter(const char*& p){
+   if(*p == '\''){
+      ++p;
+      while(*p != '\''){
+         ++p;
+      }
+      ++p;
+      return true;
+   }
+   return false;
+}
+
 bool es_id_o_palabra(const char*& ini){
-   if(std::isalpha(*ini) || *ini == '_'){
+   if(std::isalnum(*ini) || *ini == '_'){
       do{
          ++ini;
-      }while(std::isalpha(*ini) || *ini == '_');
+      }while(std::isalnum(*ini) || *ini == '_');
       return true;
    }
    return false;
@@ -163,10 +176,14 @@ std::vector<token> lexer(const std::string& entrada) {
       const char* copia = ini;
       if(es_entero(ini)){
          res.emplace_back(LITERAL_ENTERA, copia, ini);
+      }else if(es_caracter(ini)){
+         res.emplace_back(LITERAL_CHAR, copia, ini);
       }else if(es_id_o_palabra(ini)){
          res.emplace_back(lexema_id_palabra(std::string(copia, ini)), copia, ini);
       }else if(es_simbolo(ini)){
          res.emplace_back(simbolos.find(std::string(copia, ini))->second, copia, ini);
+      }else{
+         ++ini;
       }
    }
    res.push_back(token{FIN_ARCHIVO, ini, ini + 1 });
