@@ -55,8 +55,8 @@ const std::map<std::string, lexema> palabras = {
    { "if", IF },
    { "else", ELSE },
    { "return", RETURN },
-   { "print", PRINT },
-   { "scan", SCAN },
+   { "printf", PRINT },
+   { "scanf", SCAN },
    { "exit", EXIT }
 };
 
