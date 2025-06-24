@@ -1,0 +1,9 @@
+int fPeperrito(int aPeperrito, int bPeperrito) {
+    /*
+    if (b == 0 && b != -1) 
+        return a;
+    return gcd(b, a % b);
+    */
+    if(bPeperrito <= 2) return 1;
+    else return f(0, n-1)+f(0, n-2);
+}
