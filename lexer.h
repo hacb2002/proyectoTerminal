@@ -9,8 +9,6 @@
 
 enum lexema {
    INT,
-   CHAR,
-   VOID,
    MAS,
    MENOS,
    POR,
@@ -26,12 +24,8 @@ enum lexema {
    AND,
    OR,
    NOT,
-   AND_LOGICO,
-   OR_LOGICO,
    PARENTESIS_IZQ,
    PARENTESIS_DER,
-   CORCHETE_IZQ,
-   CORCHETE_DER,
    LLAVE_IZQ,
    LLAVE_DER,
    COMA,
@@ -39,25 +33,16 @@ enum lexema {
    IF,
    ELSE,
    RETURN,
-   PRINT,
-   SCAN,
-   EXIT,
    IDENTIFICADOR,
    LITERAL_ENTERA,
-   LITERAL_CHAR,
    FIN_ARCHIVO
 };
 
 const std::map<std::string, lexema> palabras = {
    { "int", INT },
-   { "char", CHAR },
-   { "void", VOID },
    { "if", IF },
    { "else", ELSE },
-   { "return", RETURN },
-   { "printf", PRINT },
-   { "scanf", SCAN },
-   { "exit", EXIT }
+   { "return", RETURN }
 };
 
 const std::map<std::string, lexema> simbolos = {
@@ -73,15 +58,11 @@ const std::map<std::string, lexema> simbolos = {
    { ">=", MAYOR_IGUAL },
    { "==", IGUAL },
    { "!=", DIFERENTE },
-   { "&&", AND_LOGICO},
-   { "||", OR_LOGICO},
-   { "&", AND },
-   { "|", OR },
+   { "&&", AND},
+   { "||", OR},
    { "!", NOT },
    { "(", PARENTESIS_IZQ },
    { ")", PARENTESIS_DER },
-   { "[", CORCHETE_IZQ },
-   { "]", CORCHETE_DER },
    { "{", LLAVE_IZQ },
    { "}", LLAVE_DER },
    { ",", COMA },
@@ -100,26 +81,29 @@ void esquiva_espacios(const char*& p) {
    }
 }
 
-void esquiva_comentarios(const char*& p) {
+bool es_comentario_linea(const char*& p) {
    if (*p == '/' && *(p + 1) == '/') {
       p += 2;
       while (*p != '\n' && *p != '\0') {
          ++p;
       }
+      return true;
    }
-   //Duda sobre si seria adecuado añadirlo desde este punto o momento. 
+   return false;
+}
+
+bool es_comentario_bloque(const char*& p) {
    if(*p == '/' && *(p+1) == '*'){
       p += 2;
-      while(*p != '*' && *(p+1) != '/'){
-         if(*(p) == '\0'){
-            break;
-         }
+      while(*p != '\0' && *p != '*' && *(p+1) != '/'){
          ++p;
       }
-      if(*(p) != '\0'){
+      if(*p != '\0'){
          p += 2;
       }
+      return true;
    }
+   return false;
 }
 
 bool es_entero(const char*& ini){
@@ -127,18 +111,6 @@ bool es_entero(const char*& ini){
       do{
          ++ini;
       }while(std::isdigit(*ini));
-      return true;
-   }
-   return false;
-}
-
-bool es_caracter(const char*& p){
-   if(*p == '\''){
-      ++p;
-      while(*p != '\''){
-         ++p;
-      }
-      ++p;
       return true;
    }
    return false;
@@ -162,7 +134,7 @@ lexema lexema_id_palabra(const std::string& palabra){
 bool es_simbolo(const char*& ini){
    if(simbolos.contains(std::string(ini, ini+1))){
       ini += 1 + simbolos.contains(std::string(ini, ini+2));
-      return true; 
+      return true;
    }
    return false;
 }
@@ -172,7 +144,9 @@ std::vector<token> lexer(const std::string& entrada) {
    const char* ini = &entrada[0];
    while (*ini != '\0') {
       esquiva_espacios(ini);
-      esquiva_comentarios(ini);
+      if (es_comentario_linea(ini) || es_comentario_bloque(ini)) {
+         continue;
+      }
       const char* copia = ini;
       if(es_entero(ini)){
          res.emplace_back(LITERAL_ENTERA, copia, ini);

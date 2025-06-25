@@ -8,7 +8,7 @@ int main( ) {
    std::getline(std::cin, entrada, '\0');
    entrada += '\0';
    std::vector<token> tokens = lexer(entrada);
-   // arbol_sintaxis arbol = parser(tokens);
+   // arbol_sintactico arbol = parser(tokens);
    // tabla_simbolos tabla = semantico(arbol);
    // std::vector<std::string> instrucciones = codegen(arbol, tabla);
    //
