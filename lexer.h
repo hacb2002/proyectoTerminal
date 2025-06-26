@@ -150,8 +150,6 @@ std::vector<token> lexer(const std::string& entrada) {
       const char* copia = ini;
       if(es_entero(ini)){
          res.emplace_back(LITERAL_ENTERA, copia, ini);
-      }else if(es_caracter(ini)){
-         res.emplace_back(LITERAL_CHAR, copia, ini);
       }else if(es_id_o_palabra(ini)){
          res.emplace_back(lexema_id_palabra(std::string(copia, ini)), copia, ini);
       }else if(es_simbolo(ini)){
