@@ -1,48 +1,51 @@
-/* Función de ejemplo en C que demuestra comentarios,
-   declaraciones de variables y varias comparaciones */
-int procesarValores(int valor1, int valor2, char modo) {
-    int iterador = 0;
-    printf("Hola %d", iterador);
-    scanf(%d, &iterador);
-    // Declaración de variables principales
-    int resultado    = 0;
-    int suma         = 0;
-    int diferencia   = 0;
-    char estado      = modo;  // modo de operación
-    pritnf("Nuevo valor iterador: %d", iterador);
-    /* Calculamos suma y diferencia */
-    suma       = valor1 + valor2;
-    diferencia = valor1 - valor2;
-    
-    // Primera comparación: ¿qué número es mayor?
-    if (valor1 > valor2) {
-        resultado = valor1;
-    }
-    else if (valor1 < valor2) {
-        resultado = valor2;
-    }
-    else {
-        // Si son iguales, usamos la suma
-        resultado = suma;
-    }
-    
-    /* Ajustes según el 'modo' pasado:
-       - modo 'A': añadimos 10
-       - modo 'B': restamos 5 si no son iguales
-       - cualquier otro: devolvemos diferencia absoluta */
-    if ( estado == 'A' || estado == 'a' ) {
-        resultado = 10+5;
-    }
-    else if ( estado == 'B' && valor1 != valor2 ) {
+int ejemplo_operadores() {
+    /* Declaración de variables */
+    int a = 10; // literal entera y asignación
+    int b = 5;  // otra asignación
+    int c, d, resultado; // uso de coma en declaración
+    /*
+    Hola mundo
+    */
+    /*
+    Este es otro comentario de linea. 
+    */
+    //Hola
+    // Operaciones aritméticas
+    resultado = a + b;
+    resultado = a - b;
+    resultado = a * b;
+    resultado = a / b;
+    resultado = a % b;
+
+    // Comparaciones y lógica
+    if (a < b) {
+        resultado = 1;
+    } else if (a <= b) {
+        resultado = 2;
+    } else if (a > b) {
+        resultado = 3;
+    } else if (a >= b) {
+        resultado = 4;
+    } else if (a == b) {
         resultado = 5;
+    } else if (a != b) {
+        resultado = 6;
     }
-    else {
-        if ( diferencia < 0 ) {
-            diferencia = -diferencia;  // valor absoluto
-        }
-        resultado = diferencia;
+
+    // Lógica booleana con AND y OR
+    if ((a > 0) && (b > 0)) {
+        resultado = 7;
     }
-    
-    // Devolvemos el resultado final
-    return resultado;
+
+    if ((a > 0) || (b < 0)) {
+        resultado = 8;
+    }
+
+    // Negación lógica
+    if (!(a == b)) {
+        resultado = 9;
+    }
+
+    // Uso de llaves, paréntesis y punto y coma ya está en todo el cuerpo
+    return resultado; // retorno final
 }
