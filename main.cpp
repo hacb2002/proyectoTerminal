@@ -16,7 +16,7 @@ int main( ) {
    //    std::cout << s << "\n";
    // }
    for(auto const& token: tokens){
-      std::cout << token.tipo << " " << std::string(token.ini, token.fin) << "\n";
+      std::cout << token.tipo << " " << token.vista << "\n";
    }
    /*
    */
