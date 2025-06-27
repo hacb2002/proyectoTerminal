@@ -1,7 +1,9 @@
 #ifndef LEXER_H
 #define LEXER_H
 
+#include "error.h"
 #include <iostream>
+#include <string_view>
 #include <cctype>
 #include <string>
 #include <vector>
@@ -71,8 +73,11 @@ const std::map<std::string, lexema> simbolos = {
 
 struct token {
    lexema tipo;
-   const char* ini;
-   const char* fin;
+   std::string_view vista;
+
+   token(lexema t, const char* ini, const char* fin)
+   : tipo(t), vista(ini, fin - ini) {
+   }
 };
 
 void esquiva_espacios(const char*& p) {
@@ -106,21 +111,21 @@ bool es_comentario_bloque(const char*& p) {
    return false;
 }
 
-bool es_entero(const char*& ini){
-   if(std::isdigit(*ini)){
+bool es_entero(const char*& p){
+   if(std::isdigit(*p)){
       do{
-         ++ini;
-      }while(std::isdigit(*ini));
+         ++p;
+      }while(std::isdigit(*p));
       return true;
    }
    return false;
 }
 
-bool es_id_o_palabra(const char*& ini){
-   if(std::isalnum(*ini) || *ini == '_'){
+bool es_id_o_palabra(const char*& p){
+   if(std::isalnum(*p) || *p == '_'){
       do{
-         ++ini;
-      }while(std::isalnum(*ini) || *ini == '_');
+         ++p;
+      }while(std::isalnum(*p) || *p == '_');
       return true;
    }
    return false;
@@ -131,9 +136,13 @@ lexema lexema_id_palabra(const std::string& palabra){
    return (it != palabras.end()) ? it->second : IDENTIFICADOR;
 }
 
-bool es_simbolo(const char*& ini){
-   if(simbolos.contains(std::string(ini, ini+1))){
-      ini += 1 + simbolos.contains(std::string(ini, ini+2));
+bool es_simbolo(const char*& p){
+   if (simbolos.contains(std::string(p, p + 2))) {
+      p += 2;
+      return true;
+   }
+   if (simbolos.contains(std::string(p, p + 1))) {
+      p += 1;
       return true;
    }
    return false;
@@ -144,21 +153,23 @@ std::vector<token> lexer(const std::string& entrada) {
    const char* ini = &entrada[0];
    while (*ini != '\0') {
       esquiva_espacios(ini);
+      const char* copia = ini;
       if (es_comentario_linea(ini) || es_comentario_bloque(ini)) {
          continue;
       }
-      const char* copia = ini;
-      if(es_entero(ini)){
+      else if(es_entero(ini)){
          res.emplace_back(LITERAL_ENTERA, copia, ini);
       }else if(es_id_o_palabra(ini)){
          res.emplace_back(lexema_id_palabra(std::string(copia, ini)), copia, ini);
       }else if(es_simbolo(ini)){
          res.emplace_back(simbolos.find(std::string(copia, ini))->second, copia, ini);
+      }else if(*ini == '\0'){
+         res.push_back(token{FIN_ARCHIVO, ini, ini + 1 });
       }else{
-         ++ini;
+         throw error("Token desconocido", copia, ini + 1);
       }
    }
-   res.push_back(token{FIN_ARCHIVO, ini, ini + 1 });
+   
    return res;
 }
 
