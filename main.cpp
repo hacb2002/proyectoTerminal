@@ -16,8 +16,10 @@ int main( ) {
    //    std::cout << s << "\n";
    // }
    for(auto const& token: tokens){
-      std::cout << token.tipo << " " << token.vista << "\n";
+      std::cout << token.tipo << " ";
+      for(auto p = token.ini; p!=token.fin; ++p){
+         std::cout << *p;
+      }
+      std::cout << "\n";
    }
-   /*
-   */
 }

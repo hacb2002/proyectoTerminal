@@ -3,7 +3,6 @@
 
 #include "error.h"
 #include <iostream>
-#include <string_view>
 #include <cctype>
 #include <string>
 #include <vector>
@@ -73,11 +72,8 @@ const std::map<std::string, lexema> simbolos = {
 
 struct token {
    lexema tipo;
-   std::string_view vista;
-
-   token(lexema t, const char* ini, const char* fin)
-   : tipo(t), vista(ini, fin - ini) {
-   }
+   const char* ini;
+   const char* fin;
 };
 
 void esquiva_espacios(const char*& p) {
@@ -151,7 +147,7 @@ bool es_simbolo(const char*& p){
 std::vector<token> lexer(const std::string& entrada) {
    std::vector<token> res;
    const char* ini = &entrada[0];
-   while (*ini != '\0') {
+   while (1) {
       esquiva_espacios(ini);
       const char* copia = ini;
       if (es_comentario_linea(ini) || es_comentario_bloque(ini)) {
@@ -165,6 +161,7 @@ std::vector<token> lexer(const std::string& entrada) {
          res.emplace_back(simbolos.find(std::string(copia, ini))->second, copia, ini);
       }else if(*ini == '\0'){
          res.push_back(token{FIN_ARCHIVO, ini, ini + 1 });
+         break;
       }else{
          throw error("Token desconocido", copia, ini + 1);
       }

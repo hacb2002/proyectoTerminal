@@ -59,7 +59,7 @@ int precedencia(lexema t) {
 }
 
 int asociatividad(lexema t) {
-    return (t != ASIGNACION);
+   return (t != ASIGNACION);
 }
 
 #endif

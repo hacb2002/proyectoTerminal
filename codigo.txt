@@ -31,7 +31,6 @@ int ejemplo_operadores() {
     } else if (a != b) {
         resultado = 6;
     }
-
     // Lógica booleana con AND y OR
     if ((a > 0) && (b > 0)) {
         resultado = 7;
@@ -48,4 +47,10 @@ int ejemplo_operadores() {
 
     // Uso de llaves, paréntesis y punto y coma ya está en todo el cuerpo
     return resultado; // retorno final
-}
+    /*
+    Hola a todos;
+    */
+}/*
+Comentario sin sentido
+*//*comentario sin sentido al final del archivo*/
+//ultimo comentario. 
