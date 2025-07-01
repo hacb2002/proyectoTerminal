@@ -2,77 +2,95 @@
 #define PARSER_SENTENCIA_H
 
 #include "lexer.h"
+#include "parser_aux.h"
 #include "parser_expresion.h"
+#include <utility>
 #include <vector>
 
 struct sentencia {
    virtual ~sentencia( ) = 0;
 };
+sentencia::~sentencia( ) = default;
 
 struct sentencia_if : sentencia {
    expresion* condicion;
    std::vector<sentencia*> parte_si;
    std::vector<sentencia*> parte_no;
+
+   sentencia_if(expresion* c, std::vector<sentencia*>&& s, std::vector<sentencia*>&& n)
+   : condicion(c), parte_si(std::move(s)), parte_no(std::move(n)) {
+   }
 };
 
 struct sentencia_return : sentencia {
    expresion* valor;
+
+   sentencia_return(expresion* v)
+   : valor(v) {
+   }
 };
 
 struct sentencia_declaracion : sentencia {
-   token tipo;
    std::vector<token> nombres;
    std::vector<expresion*> inicializadores;
+
+   sentencia_declaracion(std::vector<token>&& n, std::vector<expresion*>&& i)
+   : nombres(std::move(n)), inicializadores(std::move(i)) {
+   }
 };
 
 struct sentencia_expresion : sentencia {
    expresion* ex;
+
+   sentencia_expresion(expresion* e)
+   : ex(e) {
+   }
 };
 
 sentencia* parser_sentencia(const token*& p) {
    if (p->tipo == IF) {
       ++p;
-      auto res = new sentencia_if();
       espera(p, PARENTESIS_IZQ);
-      res->condicion = parser_expresion(p);
+      expresion* condicion = parser_expresion(p);
       espera(p, PARENTESIS_DER);
       espera(p, LLAVE_IZQ);
+      std::vector<sentencia*> parte_si, parte_no;
       while(p->tipo != LLAVE_DER){
-         res->parte_si.push_back(parser_sentencia(p));
+         parte_si.push_back(parser_sentencia(p));
       }
       espera(p, LLAVE_DER);
       if (p->tipo == ELSE) {
          ++p;
          if(p->tipo == IF){
-            res->parte_no.push_back(parser_sentencia(p));
+            parte_no.push_back(parser_sentencia(p));
          }else{
             espera(p, LLAVE_IZQ);
             while(p->tipo != LLAVE_DER){
-               res->parte_no.push_back(parser_sentencia(p));
+               parte_no.push_back(parser_sentencia(p));
             }
             espera(p, LLAVE_DER);
          }
       }
-      return res;
+      return new sentencia_if(condicion, std::move(parte_si), std::move(parte_no));
    } else if (p->tipo == RETURN) {
-      auto res = new sentencia_return();
-      res->valor = parser_expresion(p);
+      expresion* valor = parser_expresion(p);
       espera(p, PUNTO_COMA);
-      return res;
+      return new sentencia_return(valor);
    } else if (p->tipo == INT) {
-      auto res = new sentencia_declaracion();
-      res->tipo = *(p++);
+      ++p;
+      std::vector<token> nombres;
+      std::vector<expresion*> inicializadores;
       do{
-         res->nombres.emplace_back(espera(p, IDENTIFICADOR));
+         nombres.emplace_back(espera(p, IDENTIFICADOR));
          espera(p, ASIGNACION);
-         res->inicializadores.emplace_back(espera(p, LITERAL_ENTERA));
-      }while(p->tipo == COMA);
+         inicializadores.emplace_back(parser_expresion(p));    // aguas: el inicializador debía ser una expresion: int a = 1 + 2 + 3 + 4 + 5; se vale
+      }while(p->tipo == COMA);                                 // buen uso de do-while, pero aún hay un bug acá, y tiene que ver con esto (pensar en mover el ++p que está arriba puede ayudar)
       espera(p, PUNTO_COMA);
+      return new sentencia_declaracion(std::move(nombres), std::move(inicializadores));
    } else {
-      auto res = new sentencia_expresion();
-      res->ex = parser_expresion(p);
+      expresion* ex = parser_expresion(p);
       espera(p, PUNTO_COMA);
-      return res;
+      return new sentencia_expresion(ex);
    }
 }
 

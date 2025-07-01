@@ -8,7 +8,7 @@
 #include <vector>
 #include <map>
 
-enum lexema {
+enum tipo_lexema {
    INT,
    MAS,
    MENOS,
@@ -39,14 +39,14 @@ enum lexema {
    FIN_ARCHIVO
 };
 
-const std::map<std::string, lexema> palabras = {
+const std::map<std::string, tipo_lexema> palabras = {
    { "int", INT },
    { "if", IF },
    { "else", ELSE },
    { "return", RETURN }
 };
 
-const std::map<std::string, lexema> simbolos = {
+const std::map<std::string, tipo_lexema> simbolos = {
    { "+", MAS },
    { "-", MENOS },
    { "*", POR },
@@ -71,9 +71,12 @@ const std::map<std::string, lexema> simbolos = {
 };
 
 struct token {
-   lexema tipo;
-   const char* ini;
-   const char* fin;
+   tipo_lexema tipo;
+   std::string_view vista;
+
+   token(tipo_lexema t, const char* ini, const char* fin)
+   : tipo(t), vista(ini, fin - ini) {
+   }
 };
 
 void esquiva_espacios(const char*& p) {
@@ -127,19 +130,17 @@ bool es_id_o_palabra(const char*& p){
    return false;
 }
 
-lexema lexema_id_palabra(const std::string& palabra){
+tipo_lexema tipo_lexema_id_palabra(const std::string& palabra){
    auto it = palabras.find(palabra);
    return (it != palabras.end()) ? it->second : IDENTIFICADOR;
 }
 
 bool es_simbolo(const char*& p){
-   if (simbolos.contains(std::string(p, p + 2))) {
-      p += 2;
-      return true;
-   }
-   if (simbolos.contains(std::string(p, p + 1))) {
-      p += 1;
-      return true;
+   for (int t : { 2, 1 }) {
+      if (simbolos.contains(std::string(p, p + t))) {
+         p += t;
+         return true;
+      }
    }
    return false;
 }
@@ -152,11 +153,10 @@ std::vector<token> lexer(const std::string& entrada) {
       const char* copia = ini;
       if (es_comentario_linea(ini) || es_comentario_bloque(ini)) {
          continue;
-      }
-      else if(es_entero(ini)){
+      }else if(es_entero(ini)){
          res.emplace_back(LITERAL_ENTERA, copia, ini);
       }else if(es_id_o_palabra(ini)){
-         res.emplace_back(lexema_id_palabra(std::string(copia, ini)), copia, ini);
+         res.emplace_back(tipo_lexema_id_palabra(std::string(copia, ini)), copia, ini);
       }else if(es_simbolo(ini)){
          res.emplace_back(simbolos.find(std::string(copia, ini))->second, copia, ini);
       }else if(*ini == '\0'){
@@ -166,7 +166,7 @@ std::vector<token> lexer(const std::string& entrada) {
          throw error("Token desconocido", copia, ini + 1);
       }
    }
-   
+
    return res;
 }
 

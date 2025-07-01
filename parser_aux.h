@@ -3,35 +3,35 @@
 
 #include "lexer.h"
 
-const token* espera(const token*& p, lexema esperado) {
+const token& espera(const token*& p, tipo_lexema esperado) {
    if (p->tipo != esperado) {
-      throw "ERROR";
+      throw error("Token inesperado", p->vista);
    }
-   return p++;
+   return *p++;
 }
 
-bool es_operador_prefijo(lexema t) {
+bool es_operador_prefijo(tipo_lexema t) {
    return t == MAS || t == MENOS || t == NOT;
 }
 
-bool es_operador_binario(lexema t) {
+bool es_operador_binario(tipo_lexema t) {
    return t == MAS || t == MENOS || t == POR || t == ENTRE || t == MODULO ||
           t == ASIGNACION ||
           t == MENOR || t == MENOR_IGUAL || t == MAYOR || t == MAYOR_IGUAL || t == IGUAL || t == DIFERENTE ||
           t == AND || t == OR;
 }
 
-bool es_tipo(lexema t) {
+bool es_tipo(tipo_lexema t) {
    return t == INT;
 }
 
-bool es_inicio_expr(lexema t) {
+bool es_inicio_expr(tipo_lexema t) {
    return t == IDENTIFICADOR || t == LITERAL_ENTERA ||
           t == PARENTESIS_IZQ ||
          es_operador_prefijo(t);
 }
 
-int precedencia(lexema t) {
+int precedencia(tipo_lexema t) {
    switch (t) {
    case ASIGNACION:
       return 0;
@@ -58,7 +58,7 @@ int precedencia(lexema t) {
    }
 }
 
-int asociatividad(lexema t) {
+int asociatividad(tipo_lexema t) {
    return (t != ASIGNACION);
 }
 

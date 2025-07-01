@@ -1,14 +1,15 @@
 #ifndef PARSER_EXPRESION_H
 #define PARSER_EXPRESION_H
 
+#include "lexer.h"
+#include "parser_aux.h"
 #include <utility>
 #include <vector>
-#include "lexer.h"
-#include "parser_aux.h";
 
 struct expresion {
    virtual ~expresion( ) = 0;
 };
+expresion::~expresion( ) = default;
 
 struct expresion_termino : expresion {
    token termino;
@@ -98,7 +99,6 @@ expresion* parser_expresion_n_aria(const token*& p, int prec) {   // precedence 
 
 expresion* parser_expresion(const token*& p) {
    return parser_expresion_n_aria(p, 0);
-
 }
 
 #endif

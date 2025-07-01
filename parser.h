@@ -1,6 +1,7 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include "error.h"
 #include "parser_aux.h"
 #include "parser_sentencia.h"
 #include <vector>
@@ -15,12 +16,12 @@ struct arbol_sintactico {
    std::vector<funcion> funciones;
 };
 
-/* 
+/*
 ¿Bastará con solo hacer eso?
 
-¿Se tiene que hacer una distinción entre int, 
-identificador y la coma o eso se debe tomar 
-en otro modulo del programa?
+¿Se tiene que hacer una distinción entre int,
+identificador y la coma o eso se debe tomar
+en otro modulo del programa?   respuesta: se debe hacer aquí
 
 */
 std::vector<token> parser_lista_parametros(const token* p){
@@ -37,7 +38,7 @@ arbol_sintactico parser(const std::vector<token>& tokens) {
 
    while (p->tipo != FIN_ARCHIVO) {
       espera(p, INT);
-      token nombre = *espera(p, IDENTIFICADOR);
+      token nombre = espera(p, IDENTIFICADOR);
       espera(p, PARENTESIS_IZQ);
       std::vector<token> parametros = parser_lista_parametros(p);
       espera(p, PARENTESIS_DER);
