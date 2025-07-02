@@ -16,19 +16,17 @@ struct arbol_sintactico {
    std::vector<funcion> funciones;
 };
 
-/*
-¿Bastará con solo hacer eso?
-
-¿Se tiene que hacer una distinción entre int,
-identificador y la coma o eso se debe tomar
-en otro modulo del programa?   respuesta: se debe hacer aquí
-
-*/
 std::vector<token> parser_lista_parametros(const token* p){
    std::vector<token> parametros;
-   while(p->tipo != PARENTESIS_DER){
-      parametros.emplace_back(*(p++));
-   }
+   do{
+      espera(p, INT);
+      parametros.emplace_back(espera(p, IDENTIFICADOR));
+      if(p->tipo != COMA){
+         break;
+      }else{
+         espera(p, COMA);
+      }
+   }while(1);
    return parametros;
 }
 

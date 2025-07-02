@@ -73,6 +73,7 @@ sentencia* parser_sentencia(const token*& p) {
       }
       return new sentencia_if(condicion, std::move(parte_si), std::move(parte_no));
    } else if (p->tipo == RETURN) {
+      ++p;
       expresion* valor = parser_expresion(p);
       espera(p, PUNTO_COMA);
       return new sentencia_return(valor);
@@ -83,8 +84,13 @@ sentencia* parser_sentencia(const token*& p) {
       do{
          nombres.emplace_back(espera(p, IDENTIFICADOR));
          espera(p, ASIGNACION);
-         inicializadores.emplace_back(parser_expresion(p));    // aguas: el inicializador debía ser una expresion: int a = 1 + 2 + 3 + 4 + 5; se vale
-      }while(p->tipo == COMA);                                 // buen uso de do-while, pero aún hay un bug acá, y tiene que ver con esto (pensar en mover el ++p que está arriba puede ayudar)
+         inicializadores.emplace_back(parser_expresion(p));
+         if(p->tipo != COMA){
+            break;
+         }else{
+            espera(p, COMA);
+         }
+      }while(1);
       espera(p, PUNTO_COMA);
       return new sentencia_declaracion(std::move(nombres), std::move(inicializadores));
    } else {
