@@ -81,16 +81,15 @@ sentencia* parser_sentencia(const token*& p) {
       ++p;
       std::vector<token> nombres;
       std::vector<expresion*> inicializadores;
-      do{
+      for (;;) {
          nombres.emplace_back(espera(p, IDENTIFICADOR));
          espera(p, ASIGNACION);
          inicializadores.emplace_back(parser_expresion(p));
          if(p->tipo != COMA){
             break;
-         }else{
-            espera(p, COMA);
          }
-      }while(1);
+         espera(p, COMA);
+      }
       espera(p, PUNTO_COMA);
       return new sentencia_declaracion(std::move(nombres), std::move(inicializadores));
    } else {

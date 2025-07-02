@@ -12,7 +12,7 @@ int main( ) {
    try {                                                             // agregué la captura del error para poder ver dónde muere la cosa
       std::vector<token> tokens = lexer(entrada);
       arbol_sintactico arbol = parser(tokens);
-      // tabla_simbolos tabla = semantico(arbol);
+      tabla_simbolos tabla = semantico(arbol);
       // std::vector<std::string> instrucciones = codegen(arbol, tabla);
       //
       // for (const auto& s : instrucciones) {

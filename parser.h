@@ -6,28 +6,26 @@
 #include "parser_sentencia.h"
 #include <vector>
 
-struct funcion {
+struct sentencia_funcion {
    token nombre;
    std::vector<token> parametros;
    std::vector<sentencia*> sentencias;
 };
 
 struct arbol_sintactico {
-   std::vector<funcion> funciones;
+   std::vector<sentencia_funcion> funciones;
 };
 
 std::vector<token> parser_lista_parametros(const token* p){
    std::vector<token> parametros;
-   do{
+   for (;;) {
       espera(p, INT);
       parametros.emplace_back(espera(p, IDENTIFICADOR));
       if(p->tipo != COMA){
-         break;
-      }else{
-         espera(p, COMA);
+         return parametros;
       }
-   }while(1);
-   return parametros;
+      espera(p, COMA);
+   }
 }
 
 arbol_sintactico parser(const std::vector<token>& tokens) {
