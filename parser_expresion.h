@@ -58,12 +58,8 @@ std::vector<expresion*> parser_lista_expresion(const token*& p) {
    std::vector<expresion*> res;
    while (es_inicio_expr(p->tipo)) {
       res.push_back(parser_expresion(p));
-      if (p->tipo == COMA) {
-         if(es_inicio_expr((p+1)->tipo)){
-            ++p;
-         }else{
-            throw "ERROR";
-         }
+      if (p->tipo == COMA && es_inicio_expr((p+1)->tipo)){
+         ++p;
       } else {
          break;
       }

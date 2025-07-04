@@ -74,6 +74,7 @@ struct token {
    tipo_lexema tipo;
    std::string_view vista;
 
+   token( ) = default;
    token(tipo_lexema t, const char* ini, const char* fin)
    : tipo(t), vista(ini, fin - ini) {
    }

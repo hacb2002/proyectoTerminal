@@ -1,6 +1,7 @@
 #include "error.h"
 #include "lexer.h"
 #include "parser.h"
+#include "semantico.h"
 #include <iostream>
 #include <string>
 #include <vector>
