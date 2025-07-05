@@ -1,6 +1,7 @@
 #include "error.h"
 #include "lexer.h"
 #include "parser.h"
+#include "debug.h"
 #include "semantico.h"
 #include <iostream>
 #include <string>
@@ -19,9 +20,13 @@ int main( ) {
       // for (const auto& s : instrucciones) {
       //    std::cout << s << "\n";
       // }
-      for(auto const& token: tokens){
-         std::cout << token.tipo << " " << token.vista << "\n";      // metí el .ini y .fin de token en un std::string_view (que guarda lo mismo) pero así ya se puede imprimir directo
-      }
+      //std::cout << tokens; 
+      std::cout << arbol;
+
+
+
+      //Delegamos al debug el imprimir la parte de análisis dentro del semántico.
+      
    } catch (const error& e) {
       auto [linea, columna] = linea_columna(entrada, e.vista);
       std::cout << "ERROR " << linea + 1 << ":" << columna + 1 << "\n";

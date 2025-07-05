@@ -1,8 +1,12 @@
-int ejemplo_operadores() {
+int g(int a, int b, int c, int d, int e){
+    return 0;
+}
+
+int ejemplo_operadores(int x, int y,) {
     /* Declaración de variables */
     int a = 10; // literal entera y asignación
     int b = 5;  // otra asignación
-    int c, d, resultado; // uso de coma en declaración
+    int c = a, d = c, resultado = a, f = f; // uso de coma en declaración
     /*
     Hola mundo
     */
@@ -12,11 +16,14 @@ int ejemplo_operadores() {
     //Hola
     // Operaciones aritméticas
     resultado = a + b;
+    g(1,2,3,a,resultado);
     resultado = a - b;
+    resultado = a, resultado = b, resultado = resultado;
     resultado = a * b;
     resultado = a / b;
     resultado = a % b;
-
+    a+b;
+    a+resultado;
     // Comparaciones y lógica
     if (a < b) {
         resultado = 1;
