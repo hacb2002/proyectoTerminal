@@ -121,7 +121,7 @@ tabla_simbolos semantico(const arbol_sintactico& arbol) {
          }
       }
 
-      analisis_funcion analisis;
+      analisis_funcion& analisis = tabla.funciones[funcion.nombre.vista];
       analisis.declaracion = &funcion;
       pila_simbolos pila(tabla);
       for (token parametro : funcion.parametros) {
@@ -130,8 +130,6 @@ tabla_simbolos semantico(const arbol_sintactico& arbol) {
       for (const sentencia* s : funcion.sentencias) {
          verifica(s, analisis, pila);
       }
-
-      tabla.funciones[funcion.nombre.vista] = analisis;
    }
 
    return tabla;
