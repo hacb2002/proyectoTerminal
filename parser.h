@@ -16,16 +16,22 @@ struct arbol_sintactico {
    std::vector<sentencia_funcion> funciones;
 };
 
-std::vector<token> parser_lista_parametros(const token* p){
+std::vector<token> parser_lista_parametros(const token*& p){
    std::vector<token> parametros;
    for (;;) {
-      espera(p, INT);
-      parametros.emplace_back(espera(p, IDENTIFICADOR));
-      if(p->tipo != COMA){
-         return parametros;
+      /*Que pasa si no tengo nada de enteros, me pasan una funcion que es vacia en enteros*/
+      if(p->tipo == INT){
+         espera(p, INT);
+         parametros.emplace_back(espera(p, IDENTIFICADOR));
+         if(p->tipo != COMA){
+            break;
+         }
+         espera(p, COMA);
+      }else{
+         break;
       }
-      espera(p, COMA);
    }
+   return parametros;
 }
 
 arbol_sintactico parser(const std::vector<token>& tokens) {

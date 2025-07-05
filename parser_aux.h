@@ -3,19 +3,6 @@
 
 #include "lexer.h"
 
-struct control_vista {
-   const token* ini;
-   const token*& ref;
-
-   control_vista(const token*& p)
-   : ini(p), ref(p) {
-   }
-
-   explicit operator std::string_view( ) const {
-      return { ini->vista.begin( ), size_t(ini == ref ? 0 : (ref - 1)->vista.end( ) - ini->vista.begin( )) };
-   }
-};
-
 const token& espera(const token*& p, tipo_lexema esperado) {
    if (p->tipo != esperado) {
       throw error("Token inesperado", p->vista);
