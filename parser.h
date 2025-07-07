@@ -19,11 +19,10 @@ struct arbol_sintactico {
 std::vector<token> parser_lista_parametros(const token*& p){
    std::vector<token> parametros;
    for (;;) {
-      /*Que pasa si no tengo nada de enteros, me pasan una funcion que es vacia en enteros*/
       if(p->tipo == INT){
          espera(p, INT);
          parametros.emplace_back(espera(p, IDENTIFICADOR));
-         if(p->tipo != COMA){
+         if(p->tipo != COMA || (p->tipo == COMA && (p+1)->tipo == PARENTESIS_DER)){
             break;
          }
          espera(p, COMA);
