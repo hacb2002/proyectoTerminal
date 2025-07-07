@@ -21,8 +21,8 @@ int main( ) {
       //    std::cout << s << "\n";
       // }
       //std::cout << tokens; 
-      std::cout << arbol;
-
+      //std::cout << arbol;
+      std::cout << tabla;
 
 
       //Delegamos al debug el imprimir la parte de análisis dentro del semántico.
