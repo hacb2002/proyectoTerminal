@@ -9,6 +9,10 @@ struct error {
    const char* mensaje;
    std::string_view vista;
 
+   error(const char* m, const char* p)
+   : mensaje(m), vista(p) {
+   }
+
    error(const char* m, const char* ini, const char* fin)
    : mensaje(m), vista(ini, fin - ini) {
    }

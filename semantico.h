@@ -10,17 +10,19 @@
 struct analisis_funcion {
    const sentencia_funcion* declaracion;
    std::map<const expresion_termino*, int> entero_referido;
-   std::map<const expresion_termino*, token> variable_referida;
+   std::map<const expresion_termino*, const token*> variable_referida;
    std::map<const expresion_llamada_funcion*, const sentencia_funcion*> funcion_referida;
 };
 
 struct tabla_simbolos {
    std::map<std::string_view, analisis_funcion> funciones;
+   std::string_view funcion_inicial;
+   std::vector<int> argumentos_inicial;
 };
 
 struct pila_simbolos {
    const tabla_simbolos& tabla;
-   std::vector<std::map<std::string_view, token>> bloques{1};
+   std::vector<std::map<std::string_view, const token*>> bloques{1};
 
    const analisis_funcion* busca_funcion(const std::string_view& s) const {
       auto iter = tabla.funciones.find(s);
@@ -30,7 +32,7 @@ struct pila_simbolos {
    const token* busca_variable(const std::string_view& s) const {
       for (int i = bloques.size( ) - 1; i >= 0; --i) {
          if (auto iter = bloques[i].find(s); iter != bloques[i].end( )) {
-            return &iter->second;
+            return iter->second;
          }
       }
       return nullptr;
@@ -43,7 +45,7 @@ void verifica(const expresion_termino* ex, auto& analisis, auto& pila) {
    } else if (ex->termino.tipo == IDENTIFICADOR) {
       const token* t = pila.busca_variable(ex->termino.vista);
       if (t != nullptr) {
-         analisis.variable_referida[ex] = *t;
+         analisis.variable_referida[ex] = t;
       } else if (pila.busca_funcion(ex->termino.vista) != nullptr) {
          throw error("Función usada como variable en expresión", ex->termino.vista);
       } else {
@@ -85,7 +87,7 @@ void verifica(const sentencia_expresion* s, auto& analisis, auto& pila) {
 
 void verifica(const sentencia_declaracion* s, auto& analisis, auto& pila) {
    for (int i = 0; i < s->nombres.size( ); ++i) {
-      if (!pila.bloques.back( ).emplace(s->nombres[i].vista, s->nombres[i]).second) {
+      if (!pila.bloques.back( ).emplace(s->nombres[i].vista, &s->nombres[i]).second) {
          throw error("Redeclaracion de variable", s->nombres[i].vista);
       }
       verifica(s->inicializadores[i], analisis, pila);
@@ -107,7 +109,7 @@ void verifica(const sentencia_return* s, auto& analisis, auto& pila) {
    verifica(s->valor, analisis, pila);
 }
 
-tabla_simbolos semantico(const arbol_sintactico& arbol) {
+tabla_simbolos semantico(const arbol_sintactico& arbol, const char* argv[]) {
    tabla_simbolos tabla;
    for (const auto& funcion : arbol.funciones) {
       if (tabla.funciones.contains(funcion.nombre.vista)) {
@@ -124,12 +126,23 @@ tabla_simbolos semantico(const arbol_sintactico& arbol) {
       analisis_funcion& analisis = tabla.funciones[funcion.nombre.vista];
       analisis.declaracion = &funcion;
       pila_simbolos pila(tabla);
-      for (token parametro : funcion.parametros) {
-         pila.bloques[0][parametro.vista] = parametro;
+      for (const token& parametro : funcion.parametros) {
+         pila.bloques[0][parametro.vista] = &parametro;
       }
       for (const sentencia* s : funcion.sentencias) {
          verifica(s, analisis, pila);
       }
+   }
+
+   tabla.funcion_inicial = argv[1];
+   if (!tabla.funciones.contains(argv[1])) {
+      throw error("Funcion de inicio no declarada", argv[1]);
+   }
+   for (int i = 2; argv[i] != nullptr; ++i) {
+      tabla.argumentos_inicial.push_back(evalua_entero(argv[i]));
+   }
+   if (tabla.argumentos_inicial.size( ) != tabla.funciones[argv[1]].declaracion->parametros.size( )) {
+      throw error("Numero incorrecto de argumentos", argv[1]);
    }
 
    return tabla;
