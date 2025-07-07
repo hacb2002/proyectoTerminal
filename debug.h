@@ -3,6 +3,7 @@
 
 #include "lexer.h"
 #include "parser.h"
+#include "semantico.h"
 #include <iostream>
 
 std::ostream& operator<<(std::ostream& os, const token& t) {
@@ -12,11 +13,9 @@ std::ostream& operator<<(std::ostream& os, const token& t) {
 std::ostream& operator<<(std::ostream& os, const expresion* ex);
 
 std::ostream& operator<<(std::ostream& os, const std::vector<expresion*>& lista) {
-   os << "\n\tArgumentos de funcion: \n";
    for (int i = 0; i < lista.size( ); ++i) {
       os << lista[i] << (i + 1 < lista.size( ) ? "," : "");
    }
-   os << "\n";
    return os;
 }
 
@@ -44,7 +43,6 @@ std::ostream& operator<<(std::ostream& os, const std::vector<sentencia*> lista) 
 }
 
 std::ostream& operator<<(std::ostream& os, const sentencia_declaracion*& s) {
-   os << "\tVariables declaradas en una linea: \n";
    if (s != nullptr) {
       for(int i = 0; i<s->nombres.size(); ++i){
          os << s->nombres[i].vista 
@@ -95,5 +93,44 @@ std::ostream& operator<<(std::ostream& os, const arbol_sintactico& arbol) {
    }
    return os;
 }
+
+std::ostream& operator<<(std::ostream& os, const analisis_funcion& funcion) {
+   os << "Funcion: ";
+   os << funcion.declaracion->nombre.vista << "\n";
+   os << "Enteros encontrados:\n";
+   for (const auto& entero : funcion.entero_referido) {
+      os << "  " << entero.first << " = " << entero.second << "\n";
+   }
+   os << "Variables referidas:\n";
+   for (const auto& token : funcion.variable_referida) {
+      os << "  " << token.first << " = " << token.second << "\n";
+   }
+   os << "Funciones referidas:\n";
+   for (const auto& f : funcion.funcion_referida) {
+      os << "  " << f.first << " = " << f.second->nombre.vista << "\n";
+   }
+   return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const tabla_simbolos& tabla) {
+    os << "—— Tabla de símbolos ——\n";
+    for (const auto& analisis : tabla.funciones) {
+      os << analisis.second << "\n";
+    }
+    return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const pila_simbolos& pila){
+   for(int i = pila.bloques.size()-1; i >= 0; --i){
+      os << "Nivel de pila: " << i << "\n";
+      for(const auto& actual : pila.bloques[i]){
+         os << actual.first << " = " << actual.second << "\n";
+      }
+      os << "\n";
+   }
+   os << "\n\n";
+   return os;
+}
+
 
 #endif
