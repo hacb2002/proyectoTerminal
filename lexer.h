@@ -100,7 +100,7 @@ bool es_comentario_linea(const char*& p) {
 bool es_comentario_bloque(const char*& p) {
    if(*p == '/' && *(p+1) == '*'){
       p += 2;
-      while(*p != '\0' && *p != '*' && *(p+1) != '/'){
+      while(*p != '\0' && !(*p == '*' && *(p+1) == '/')){
          ++p;
       }
       if(*p != '\0'){
