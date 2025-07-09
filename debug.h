@@ -81,9 +81,12 @@ std::ostream& operator<<(std::ostream& os, const sentencia_funcion& f) {
 }
 
 std::ostream& operator<<(std::ostream& os, const std::vector<token>& tokens) {
+   int total = 0;
    for (const auto& t : tokens) {
-      os << t << "\n";
+      os << t.tipo << " " << t.vista << "\n";
+      ++total;
    }
+   os << total << "\n";
    return os;
 }
 
@@ -103,7 +106,7 @@ std::ostream& operator<<(std::ostream& os, const analisis_funcion& funcion) {
    }
    os << "Variables referidas:\n";
    for (const auto& token : funcion.variable_referida) {
-      os << "  " << token.first << " = " << token.second << "\n";
+      os << "  " << token.first << " = " << *token.second << "\n";
    }
    os << "Funciones referidas:\n";
    for (const auto& f : funcion.funcion_referida) {
@@ -129,6 +132,13 @@ std::ostream& operator<<(std::ostream& os, const pila_simbolos& pila){
       os << "\n";
    }
    os << "\n\n";
+   return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const std::map<const token*, int>& estado){
+   for(const auto& it : estado){
+      os << "Direccion = " << &it << "; Variable: " << it.first->vista << "; valor = " << it.second << "\n";
+   }
    return os;
 }
 
