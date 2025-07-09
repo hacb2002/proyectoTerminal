@@ -15,7 +15,7 @@ int evalua(const expresion* ex, auto&... params) {
    } else if (auto p = dynamic_cast<const expresion_llamada_funcion*>(ex); p != nullptr) {
       return evalua(p, params...);
    }
-   return -1; //Se agrega para evitar los warning en la compilación. 
+   return -1; //Se agrega para evitar los warning en la compilación.
 }
 
 void evalua(const sentencia* s, auto&... params) {
@@ -30,42 +30,41 @@ void evalua(const sentencia* s, auto&... params) {
    }
 }
 
-int evaluar_operador(int& izq, int& der, const expresion_binaria* ex, auto& analisis, auto& estado){
-   auto op = ex->operador.tipo;
+int evaluar_operador(int izq, int der, tipo_token op, const std::string_view& vista){
    if (op == MAS) {
-   return izq + der;
+      return izq + der;
    } else if (op == MENOS) {
-   return izq - der;
+      return izq - der;
    } else if (op == POR) {
-   return izq * der;
+      return izq * der;
    } else if (op == ENTRE) {
-   if (der == 0) throw error("División por cero en expresión binaria", ex->operador.vista);
-   return izq / der;
+      if (der == 0) throw error("División por cero en expresión binaria", vista);
+      return izq / der;
    } else if (op == MODULO) {
-   if (der == 0) throw error("Módulo por cero en expresión binaria", ex->operador.vista);
-   return izq % der;
+      if (der == 0) throw error("Módulo por cero en expresión binaria", vista);
+      return izq % der;
    } else if (op == MENOR) {
-   return izq < der;
+      return izq < der;
    } else if (op == MENOR_IGUAL) {
-   return izq <= der;
+      return izq <= der;
    } else if (op == MAYOR) {
-   return izq > der;
+      return izq > der;
    } else if (op == MAYOR_IGUAL) {
-   return izq >= der;
+      return izq >= der;
    } else if (op == IGUAL) {
-   return izq == der;
+      return izq == der;
    } else if (op == DIFERENTE) {
-   return izq != der;
-   } else if (op == ASIGNACION) {
+      return izq != der;
+   } /*else if (op == ASIGNACION) {
       auto pt = dynamic_cast<const expresion_termino*>(ex->izq);
       if (!pt || pt->termino.tipo != IDENTIFICADOR) {
-         throw error("Lado izquierdo de asignación no es variable", ex->operador.vista);
+         throw error("Lado izquierdo de asignación no es variable", vista);
       }
       const token* varTok = analisis.variable_referida.find(pt)->second;
       estado[varTok] = der;
       return der;
-   }
-   throw error("Operador binario desconocido en evalua", ex->operador.vista);
+   }*/
+   throw error("Operador binario desconocido en evalua", vista);
 }
 
 #endif

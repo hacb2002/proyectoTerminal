@@ -29,10 +29,10 @@ int main(int argc, const char* argv[]) {
       //std::cout << tokens;
       //std::cout << arbol;
       //std::cout << tabla;
-      //Imprimir el valor de retorno de la funcion. 
-      /*for (const auto& s : instrucciones) {
+      //Imprimir el valor de retorno de la funcion.
+      for (const auto& s : instrucciones) {
         std::cout << s << "\n";
-      }*/
+      }
    } catch (const error& e) {
       auto [linea, columna] = linea_columna(entrada, e.vista);
       std::cout << "ERROR " << linea + 1 << ":" << columna + 1 << "\n";

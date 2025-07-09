@@ -46,7 +46,7 @@ int evalua(const expresion_llamada_funcion* ex, auto& analisis, auto& tabla, aut
    for (const expresion* ex : ex->argumentos) {
       argumentos.push_back(evalua(ex, analisis, tabla, estado, salida));
    }
-   return evalua_llamada(analisis.funcion_referida.find(ex)->second->nombre.vista, argumentos, tabla, salida);
+   return llama(analisis.funcion_referida.find(ex)->second->nombre.vista, argumentos, tabla, salida);
 }
 
 void evalua(const sentencia_expresion* s, auto& analisis, auto& tabla, auto& estado, auto& salida) {
@@ -55,7 +55,9 @@ void evalua(const sentencia_expresion* s, auto& analisis, auto& tabla, auto& est
 
 void evalua(const sentencia_declaracion* s, auto& analisis, auto& tabla, auto& estado, auto& salida) {
    for (int i = 0; i < s->nombres.size( ); ++i) {
-      estado[&s->nombres[i]] = evalua(s->inicializadores[i], analisis, tabla, estado, salida);
+      int valor = evalua(s->inicializadores[i], analisis, tabla, estado, salida);
+      salida.push_back("DECLARA " + std::string(s->nombres[i].vista) + "#" + std:to_string((std::size_t)&s->nombres[i]) + ":" + std::to_string(valor));
+      estado[&s->nombres[i]] = valor;
    }
 }
 
@@ -65,18 +67,27 @@ void evalua(const sentencia_if* s, auto& analisis, auto& tabla, auto& estado, au
       evalua(actual, analisis, tabla, estado, salida);
    }
 }
- 
+
 void evalua(const sentencia_return* s, auto& analisis, auto& tabla, auto& estado, auto& salida) {
-   throw evalua(s->valor, analisis, tabla, estado, salida);
+   int r = evalua(s->valor, analisis, tabla, estado, salida);
+   salida.push_back("REGRESA " + std::to_string(r));
+   throw r;
 }
 
-int evalua_llamada(const std::string_view& nombre, auto& argumentos, const auto& tabla, auto& salida) {
+int llama(const std::string_view& nombre, auto& argumentos, const auto& tabla, auto& salida) {
    const auto& analisis = tabla.funciones.find(nombre)->second;
    auto decl = analisis.declaracion;
    std::map<const token*, int> estado;
+   std::string comando_llamada = "LLAMA " + nombre;
    for (int i = 0; i < decl->parametros.size( ); ++i) {
+      comando_llamada += " ";
+      comando_llamada += decl->parametros[i].vista;
+      comando_llamada += ":";
+      comando_llamada += std::to_string(argumentos[i]);
       estado[&decl->parametros[i]] = argumentos[i];
    }
+   salida.push_back(comando_llamada);
+
    try {
       for (const sentencia* s : decl->sentencias) {
          evalua(s, analisis, tabla, estado, salida);
@@ -84,12 +95,13 @@ int evalua_llamada(const std::string_view& nombre, auto& argumentos, const auto&
    } catch (int r) {
       return r;
    }
+   salida.push_back("ERROR NO_RETORNO");
    return 0xDEADBEEF;
 }
 
 std::vector<std::string> codegen(const arbol_sintactico& arbol, const tabla_simbolos& tabla) {
    std::vector<std::string> salida;
-   int res = evalua_llamada(tabla.funcion_inicial, tabla.argumentos_inicial, tabla, salida);
+   int res = llama(tabla.funcion_inicial, tabla.argumentos_inicial, tabla, salida);
    salida.push_back("Resultado: " + std::to_string(res));
    return salida;
 }
