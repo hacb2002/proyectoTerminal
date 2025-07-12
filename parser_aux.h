@@ -12,7 +12,7 @@ struct control_vista {
    }
 
    explicit operator std::string_view( ) const {
-      return { ini->vista.begin( ), size_t(ini == ref ? 0 : (ref - 1)->vista.end( ) - ini->vista.begin( )) };
+      return { ini->vista.data( ), std::size_t(ini == ref ? 0 : (ref - 1)->vista.end( ) - ini->vista.begin( )) };
    }
 };
 

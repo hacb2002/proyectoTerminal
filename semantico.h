@@ -4,8 +4,10 @@
 #include "lexer.h"
 #include "parser.h"
 #include "semantico_aux.h"
-#include <set>
 #include <map>
+#include <set>
+#include <span>
+#include <vector>
 
 struct analisis_funcion {
    const sentencia_funcion* declaracion;
@@ -109,7 +111,7 @@ void verifica(const sentencia_return* s, auto& analisis, auto& pila) {
    verifica(s->valor, analisis, pila);
 }
 
-tabla_simbolos semantico(const arbol_sintactico& arbol, const char* argv[]) {
+tabla_simbolos semantico(const arbol_sintactico& arbol, const std::span<std::string_view>& args) {
    tabla_simbolos tabla;
    for (const auto& funcion : arbol.funciones) {
       if (tabla.funciones.contains(funcion.nombre.vista)) {
@@ -134,15 +136,15 @@ tabla_simbolos semantico(const arbol_sintactico& arbol, const char* argv[]) {
       }
    }
 
-   if (!tabla.funciones.contains(argv[1])) {
-      throw error("Funcion de inicio no declarada", argv[1]);
+   tabla.funcion_inicial = args[0];
+   if (!tabla.funciones.contains(tabla.funcion_inicial)) {
+      throw error("Funcion de inicio no declarada", tabla.funcion_inicial);
    }else{
-      tabla.funcion_inicial = argv[1];
-      for (int i = 2; argv[i] != nullptr; ++i) {
-         tabla.argumentos_inicial.push_back(evalua_entero(argv[i]));
+      for (int i = 1; i < args.size( ); ++i) {
+         tabla.argumentos_inicial.push_back(evalua_entero(args[i]));
       }
-      if (tabla.argumentos_inicial.size( ) != tabla.funciones[argv[1]].declaracion->parametros.size( )) {
-         throw error("Numero incorrecto de argumentos", argv[1]);
+      if (tabla.argumentos_inicial.size( ) != tabla.funciones[tabla.funcion_inicial].declaracion->parametros.size( )) {
+         throw error("Numero incorrecto de argumentos", tabla.funcion_inicial);
       }
    }
 

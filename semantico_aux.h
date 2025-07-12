@@ -11,7 +11,7 @@
 /*Lo desglosé para que se entendiera mejor paso a paso, pero igual podemos regresarlo a una sola línea*/
 int evalua_entero(const std::string_view& s) {
    int res;
-   std::from_chars_result conversion = std::from_chars(s.begin(), s.end(), res);
+   std::from_chars_result conversion = std::from_chars(s.data(), s.data() + s.size(), res);
    if (conversion.ec == std::errc( )) {
     return res;
    }

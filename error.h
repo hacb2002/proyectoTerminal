@@ -24,7 +24,7 @@ struct error {
 
 std::pair<int, int> linea_columna(const std::string& s, const std::string_view& v) {
    int linea = 0, columna = 0;
-   for (auto p = &s[0]; p != v.begin( ); ++p) {
+   for (auto p = &s[0]; p != v.data( ); ++p) {
       if (*p == '\n') {
          linea += 1, columna = 0;
       } else {

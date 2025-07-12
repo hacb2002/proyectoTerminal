@@ -13,17 +13,6 @@ struct sentencia {
    : vista(cv){
    }
 
-   std::pair<int, int> obtener_linea_columna(const std::string& s) {
-   int linea = 0, columna = 0;
-   for (auto p = &s[0]; p != vista.begin( ); ++p) {
-      if (*p == '\n') {
-         linea += 1, columna = 0;
-      } else {
-         columna += 1;
-      }
-   }
-   return { linea, columna };
-}
    virtual ~sentencia( ) = 0;
 };
 sentencia::~sentencia( ) = default;
