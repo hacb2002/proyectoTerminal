@@ -30,14 +30,18 @@ int main(int argc, const char* argv[]) {
       //std::cout << arbol;
       //std::cout << tabla;
       //Imprimir el valor de retorno de la funcion.
-      for (const auto& s : instrucciones) {
-        std::cout << s << "\n";
-      }
+      std::cout << instrucciones;
    } catch (const error& e) {
-      auto [linea, columna] = linea_columna(entrada, e.vista);
-      std::cout << "ERROR " << linea + 1 << ":" << columna + 1 << "\n";
-      std::cout << e.mensaje << "\n";
-      std::cout << e.vista << "\n";
+      if(!e.fuera_archivo){
+         auto [linea, columna] = linea_columna(entrada, e.vista);
+         std::cout << "ERROR " << linea + 1 << ":" << columna + 1 << "\n";
+         std::cout << e.mensaje << "\n";
+         std::cout << e.vista << "\n";
+      }else{
+         std::cout << "ERROR\n";
+         std::cout << e.mensaje << "\n";
+         std::cout << e.vista << "\n";
+      }
    }
 
 }
