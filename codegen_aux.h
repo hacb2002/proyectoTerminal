@@ -15,7 +15,7 @@ int evalua(const expresion* ex, auto&... params) {
    } else if (auto p = dynamic_cast<const expresion_llamada_funcion*>(ex); p != nullptr) {
       return evalua(p, params...);
    }
-   return -1; //Se agrega para evitar los warning en la compilación.
+   return -1;
 }
 
 void evalua(const sentencia* s, auto&... params) {
@@ -30,7 +30,7 @@ void evalua(const sentencia* s, auto&... params) {
    }
 }
 
-int evaluar_operador(int izq, int der, tipo_token op, const std::string_view& vista){
+int evaluar_operador(int izq, int der, auto op, auto& vista, auto& salida){
    if (op == MAS) {
       return izq + der;
    } else if (op == MENOS) {
@@ -38,10 +38,18 @@ int evaluar_operador(int izq, int der, tipo_token op, const std::string_view& vi
    } else if (op == POR) {
       return izq * der;
    } else if (op == ENTRE) {
-      if (der == 0) throw error("División por cero en expresión binaria", vista);
+      if (der == 0){
+         //Error y se regresa -1 para que continue. 
+         salida.push_back("ERROR DIV0");
+         return -1;
+      }
       return izq / der;
    } else if (op == MODULO) {
-      if (der == 0) throw error("Módulo por cero en expresión binaria", vista);
+      if (der == 0){
+         //Error en ejecucion. 
+         salida.push_back("ERROR MOD0");
+         return -1;
+      }
       return izq % der;
    } else if (op == MENOR) {
       return izq < der;
@@ -55,16 +63,8 @@ int evaluar_operador(int izq, int der, tipo_token op, const std::string_view& vi
       return izq == der;
    } else if (op == DIFERENTE) {
       return izq != der;
-   } /*else if (op == ASIGNACION) {
-      auto pt = dynamic_cast<const expresion_termino*>(ex->izq);
-      if (!pt || pt->termino.tipo != IDENTIFICADOR) {
-         throw error("Lado izquierdo de asignación no es variable", vista);
-      }
-      const token* varTok = analisis.variable_referida.find(pt)->second;
-      estado[varTok] = der;
-      return der;
-   }*/
-   throw error("Operador binario desconocido en evalua", vista);
+   }
+   return -1;
 }
 
 #endif
