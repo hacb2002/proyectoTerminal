@@ -142,5 +142,10 @@ std::ostream& operator<<(std::ostream& os, const std::map<const token*, int>& es
    return os;
 }
 
-
+std::ostream& operator<<(std::ostream& os, const std::vector<std::string> instrucciones){
+   for(const auto& instruccion : instrucciones){
+      os << instruccion << "\n";
+   }
+   return os;
+}
 #endif
