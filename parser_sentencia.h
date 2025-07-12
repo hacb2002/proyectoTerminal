@@ -8,25 +8,31 @@
 #include <vector>
 
 struct sentencia {
+   std::string_view vista;
+   sentencia(const control_vista& cv)
+   : vista(cv){
+   }
+
+   std::pair<int, int> obtener_linea_columna(const std::string& s) {
+   int linea = 0, columna = 0;
+   for (auto p = &s[0]; p != vista.begin( ); ++p) {
+      if (*p == '\n') {
+         linea += 1, columna = 0;
+      } else {
+         columna += 1;
+      }
+   }
+   return { linea, columna };
+}
    virtual ~sentencia( ) = 0;
 };
 sentencia::~sentencia( ) = default;
 
-struct sentencia_if : sentencia {
-   expresion* condicion;
-   std::vector<sentencia*> parte_si;
-   std::vector<sentencia*> parte_no;
+struct sentencia_expresion : sentencia {
+   expresion* ex;
 
-   sentencia_if(expresion* c, std::vector<sentencia*>&& s, std::vector<sentencia*>&& n)
-   : condicion(c), parte_si(std::move(s)), parte_no(std::move(n)) {
-   }
-};
-
-struct sentencia_return : sentencia {
-   expresion* valor;
-
-   sentencia_return(expresion* v)
-   : valor(v) {
+   sentencia_expresion(const control_vista& cv, expresion* e)
+   : sentencia(cv), ex(e) {
    }
 };
 
@@ -34,20 +40,31 @@ struct sentencia_declaracion : sentencia {
    std::vector<token> nombres;
    std::vector<expresion*> inicializadores;
 
-   sentencia_declaracion(std::vector<token>&& n, std::vector<expresion*>&& i)
-   : nombres(std::move(n)), inicializadores(std::move(i)) {
+   sentencia_declaracion(const control_vista& cv, std::vector<token>&& n, std::vector<expresion*>&& i)
+   : sentencia(cv), nombres(std::move(n)), inicializadores(std::move(i)) {
    }
 };
 
-struct sentencia_expresion : sentencia {
-   expresion* ex;
+struct sentencia_if : sentencia {
+   expresion* condicion;
+   std::vector<sentencia*> parte_si;
+   std::vector<sentencia*> parte_no;
 
-   sentencia_expresion(expresion* e)
-   : ex(e) {
+   sentencia_if(const control_vista& cv, expresion* c, std::vector<sentencia*>&& s, std::vector<sentencia*>&& n)
+   : sentencia(cv), condicion(c), parte_si(std::move(s)), parte_no(std::move(n)) {
+   }
+};
+
+struct sentencia_return : sentencia {
+   expresion* valor;
+
+   sentencia_return(const control_vista& cv, expresion* v)
+   : sentencia(cv), valor(v) {
    }
 };
 
 sentencia* parser_sentencia(const token*& p) {
+   control_vista cv(p);
    if (p->tipo == IF) {
       ++p;
       espera(p, PARENTESIS_IZQ);
@@ -71,12 +88,12 @@ sentencia* parser_sentencia(const token*& p) {
             espera(p, LLAVE_DER);
          }
       }
-      return new sentencia_if(condicion, std::move(parte_si), std::move(parte_no));
+      return new sentencia_if(cv, condicion, std::move(parte_si), std::move(parte_no));
    } else if (p->tipo == RETURN) {
       ++p;
       expresion* valor = parser_expresion(p);
       espera(p, PUNTO_COMA);
-      return new sentencia_return(valor);
+      return new sentencia_return(cv, valor);
    } else if (p->tipo == INT) {
       ++p;
       std::vector<token> nombres;
@@ -91,11 +108,15 @@ sentencia* parser_sentencia(const token*& p) {
          espera(p, COMA);
       }
       espera(p, PUNTO_COMA);
-      return new sentencia_declaracion(std::move(nombres), std::move(inicializadores));
-   } else {
+      return new sentencia_declaracion(cv, std::move(nombres), std::move(inicializadores));
+   } else if(p->tipo == IDENTIFICADOR && (p+1)->tipo == ASIGNACION){
+      throw error("No se pueden reasignar variables", p->vista);
+   }else if(p->tipo == LITERAL_ENTERA && (p+1)->tipo == ASIGNACION){
+      throw error("Una literal entera no puede ser asignada a otro valor entero", p->vista);
+   }else {
       expresion* ex = parser_expresion(p);
       espera(p, PUNTO_COMA);
-      return new sentencia_expresion(ex);
+      return new sentencia_expresion(cv, ex);
    }
 }
 
