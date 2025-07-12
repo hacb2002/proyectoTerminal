@@ -1,0 +1,93 @@
+<!doctype html>
+<html>
+   <head>
+      <meta charset="utf-8">
+      <style>
+         svg {
+            height: 50%;                        /* una cosa es el tamaño de despliegue */
+            aspect-ratio: 1 / 1;
+            border: 1px solid black;
+         }
+         
+         svg line {
+            marker-end: url(#triangle);
+         }
+         
+         .flecha_negra {
+            stroke-width: 2px;
+            stroke: rgb(255, 51, 51);
+         }
+      </style>
+   </head>
+   <body onload="ejemplo( )">
+      <svg id="svg" viewbox="0 0 500 500">      <!-- y otra cosa completamente independiente son las "unidades" internas de la zona de dibujo -->
+         <marker id="triangle" viewBox="0 0 10 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="7" markerHeight="5" orient="auto">
+            <path d="M 0,0 L 10,5 L 0,10 Z" />
+         </marker>
+      </svg><br>     
+      <script>
+         let svg = document.getElementById("svg");
+         let ms = 333;
+            
+         function coordenadas_elemento(obj) {
+            return [ Number(obj.getAttribute("x")), Number(obj.getAttribute("y")) ];
+         }
+
+         function dibuja_cuadrado(x, y, w, h, clase = "") {
+            let obj = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            obj.setAttribute("class", clase);
+            obj.setAttribute("x", x);
+            obj.setAttribute("y", y);
+            obj.setAttribute("width", w);
+            obj.setAttribute("height", h);
+            return svg.appendChild(obj);
+         }
+         
+         function dibuja_texto(x, y, texto, clase = "") {
+            let obj = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            obj.setAttribute("class", clase);
+            obj.setAttribute("x", x);
+            obj.setAttribute("y", y);
+            obj.textContent = texto;
+            return svg.appendChild(obj);
+         }
+         
+         function dibuja_flecha(obj1, obj2, clase = "") {
+            let [x1, y1] = coordenadas_elemento(obj1);
+            let [x2, y2] = coordenadas_elemento(obj2);
+            let obj = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            obj.setAttribute("class", clase);
+            obj.setAttribute("x1", x1);
+            obj.setAttribute("y1", y1);
+            obj.setAttribute("x2", x2);
+            obj.setAttribute("y2", y2);
+            return svg.appendChild(obj);
+         }
+         
+         function elimina_elemento(obj) {
+            obj.remove( );
+         }
+         
+         function retardo(ms) {
+            return new Promise(function (resolver) {
+               retardo_resolver = resolver;
+               setTimeout(( ) => resolver( ), ms);
+            });
+         }
+         
+         async function ejemplo( ) {
+            let c = dibuja_cuadrado(50, 50, 100, 100);
+            await retardo(ms);
+            let t = dibuja_texto(200, 200, "hola");
+            await retardo(ms);
+            let f = dibuja_flecha(c, t, "flecha_negra");
+            await retardo(ms);
+            elimina_elemento(f);
+            await retardo(ms);
+            elimina_elemento(t);
+            await retardo(ms);
+            elimina_elemento(c);
+         }
+      </script>
+   </body>
+</html>
