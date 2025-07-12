@@ -16,7 +16,7 @@ int evalua(const expresion_termino* ex, auto& analisis, auto& tabla, auto& estad
    } else if (ex->termino.tipo == IDENTIFICADOR) {
       return estado[analisis.variable_referida.find(ex)->second];
    }
-   throw error("Error en el dato", ex->termino.vista);
+   return -1;
 }
 
 int evalua(const expresion_binaria* ex, auto& analisis, auto& tabla, auto& estado, auto& salida) {
@@ -27,7 +27,7 @@ int evalua(const expresion_binaria* ex, auto& analisis, auto& tabla, auto& estad
    return izq == 0 ? 0 : evalua(ex->der, analisis, tabla, estado, salida);
    }
    int der = evalua(ex->der, analisis, tabla, estado, salida);
-   return evaluar_operador(izq, der, ex, analisis, estado);
+   return evaluar_operador(izq, der, ex->operador.tipo, ex->vista, salida);
 }
 
 
@@ -56,7 +56,7 @@ void evalua(const sentencia_expresion* s, auto& analisis, auto& tabla, auto& est
 void evalua(const sentencia_declaracion* s, auto& analisis, auto& tabla, auto& estado, auto& salida) {
    for (int i = 0; i < s->nombres.size( ); ++i) {
       int valor = evalua(s->inicializadores[i], analisis, tabla, estado, salida);
-      salida.push_back("DECLARA " + std::string(s->nombres[i].vista) + "#" + std:to_string((std::size_t)&s->nombres[i]) + ":" + std::to_string(valor));
+      salida.push_back("DECLARA " + std::string(s->nombres[i].vista) + "#" + std::to_string((std::size_t)&s->nombres[i]) + ":" + std::to_string(valor));
       estado[&s->nombres[i]] = valor;
    }
 }
@@ -78,7 +78,7 @@ int llama(const std::string_view& nombre, auto& argumentos, const auto& tabla, a
    const auto& analisis = tabla.funciones.find(nombre)->second;
    auto decl = analisis.declaracion;
    std::map<const token*, int> estado;
-   std::string comando_llamada = "LLAMA " + nombre;
+   std::string comando_llamada = "LLAMA " + std::string(nombre);
    for (int i = 0; i < decl->parametros.size( ); ++i) {
       comando_llamada += " ";
       comando_llamada += decl->parametros[i].vista;
@@ -102,7 +102,6 @@ int llama(const std::string_view& nombre, auto& argumentos, const auto& tabla, a
 std::vector<std::string> codegen(const arbol_sintactico& arbol, const tabla_simbolos& tabla) {
    std::vector<std::string> salida;
    int res = llama(tabla.funcion_inicial, tabla.argumentos_inicial, tabla, salida);
-   salida.push_back("Resultado: " + std::to_string(res));
    return salida;
 }
 
