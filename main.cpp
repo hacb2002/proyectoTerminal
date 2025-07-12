@@ -25,20 +25,20 @@ int main(int argc, const char* argv[]) {
       std::vector<token> tokens = lexer(entrada);
       arbol_sintactico arbol = parser(tokens);
       tabla_simbolos tabla = semantico(arbol, argv);
-      std::vector<std::string> instrucciones = codegen(arbol, tabla);
+      std::vector<std::string> instrucciones = codegen(entrada, arbol, tabla);
       //std::cout << tokens;
       //std::cout << arbol;
       //std::cout << tabla;
       //Imprimir el valor de retorno de la funcion.
       std::cout << instrucciones;
    } catch (const error& e) {
-      if(!e.fuera_archivo){
+      if(entrada.data( ) <= e.vista.begin( ) && e.vista.end( ) <= entrada.data( ) + entrada.size( )) {
          auto [linea, columna] = linea_columna(entrada, e.vista);
          std::cout << "ERROR " << linea + 1 << ":" << columna + 1 << "\n";
          std::cout << e.mensaje << "\n";
          std::cout << e.vista << "\n";
       }else{
-         std::cout << "ERROR\n";
+         std::cout << "ERROR argv\n";
          std::cout << e.mensaje << "\n";
          std::cout << e.vista << "\n";
       }

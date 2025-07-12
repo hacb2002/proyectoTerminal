@@ -8,7 +8,7 @@
 struct error {
    const char* mensaje;
    std::string_view vista;
-   bool fuera_archivo;
+
    error(const char* m, const char* p)
    : mensaje(m), vista(p) {
    }
@@ -20,11 +20,6 @@ struct error {
    error(const char* m, const std::string_view& v)
    : mensaje(m), vista(v) {
    }
-
-   error(const char* m, const char* p, bool a)
-   : mensaje(m), vista(p), fuera_archivo(a) {
-   }
-
 };
 
 std::pair<int, int> linea_columna(const std::string& s, const std::string_view& v) {

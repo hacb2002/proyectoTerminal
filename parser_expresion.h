@@ -101,6 +101,9 @@ expresion* parser_expresion_n_aria(const token*& p, int prec) {
    expresion* ex = parser_expresion_unaria(p);
    while (es_operador_binario(p->tipo) && precedencia(p->tipo) >= prec) {
       token operador = *p++;
+      if(operador.tipo == ASIGNACION){
+         throw error("En este subconjunto de C no se pueden asignar valores excepto al inicializar variables", operador.vista);
+      }
       ex = new expresion_binaria(cv, ex, operador, parser_expresion_n_aria(p, precedencia(operador.tipo) + asociatividad(operador.tipo)));
    }
    return ex;

@@ -3,12 +3,27 @@ int f(int a, int b, int c, int d) {
 
     // AND con corto circuito: si a == 0, no se evalúa b/a
     if (a != 0 && b / a > 2) {
-        result = result + 1;
+        int gomita = 7;
+        //result = result + 1;
+        int taquito = 2, diffie = 999;
     }
-
+    
+    if (1) {
+        int gomita = 7;
+        //result = result + 1;
+        int taquito = 2, diffie = 999;
+    }
+    
+    if (1) {
+        int gomita = 7;
+        //result = result + 1;
+        int taquito = 2, diffie = 999;
+    }
+    
+    5 / 0;
     // OR con corto circuito: si c == 0, no se evalúa d/c
     if (c == 0 || d / c > 3) {
-        result = result + 2;
+        //result = result + 2;
     }
 
     return result;

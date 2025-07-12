@@ -4,6 +4,24 @@
 #include "lexer.h"
 #include "parser.h"
 #include "error.h"
+#include <sstream>
+
+std::string concatena(const std::vector<std::string>& v, const char* s) {
+   std::ostringstream oss;
+   if (!v.empty( )) {
+      oss << v.front( );
+      for (int i = 1; i < v.size( ); ++i) {
+         oss << " " << v[i];
+      }
+   }
+   return oss.str( );
+}
+
+std::string concatena(const auto&... v) {
+   std::ostringstream oss;
+   (oss << ... << v);
+   return oss.str( );
+}
 
 int evalua(const expresion* ex, auto&... params) {
    if (auto p = dynamic_cast<const expresion_termino*>(ex); p != nullptr) {
@@ -30,27 +48,18 @@ void evalua(const sentencia* s, auto&... params) {
    }
 }
 
-int evaluar_operador(int izq, int der, auto op, auto& vista, auto& salida){
+int evalua_operador(int izq, int der, auto op, auto& vista, auto& salida){
    if (op == MAS) {
       return izq + der;
    } else if (op == MENOS) {
       return izq - der;
    } else if (op == POR) {
       return izq * der;
-   } else if (op == ENTRE) {
+   } else if (op == ENTRE || op == MODULO) {
       if (der == 0){
-         //Error y se regresa -1 para que continue. 
-         salida.push_back("ERROR DIV0");
-         return -1;
+         throw "División entre cero";
       }
-      return izq / der;
-   } else if (op == MODULO) {
-      if (der == 0){
-         //Error en ejecucion. 
-         salida.push_back("ERROR MOD0");
-         return -1;
-      }
-      return izq % der;
+      return (op == ENTRE ? izq / der : izq % der);
    } else if (op == MENOR) {
       return izq < der;
    } else if (op == MENOR_IGUAL) {

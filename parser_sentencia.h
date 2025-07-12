@@ -109,10 +109,6 @@ sentencia* parser_sentencia(const token*& p) {
       }
       espera(p, PUNTO_COMA);
       return new sentencia_declaracion(cv, std::move(nombres), std::move(inicializadores));
-   } else if(p->tipo == IDENTIFICADOR && (p+1)->tipo == ASIGNACION){
-      throw error("No se pueden reasignar variables", p->vista);
-   }else if(p->tipo == LITERAL_ENTERA && (p+1)->tipo == ASIGNACION){
-      throw error("Una literal entera no puede ser asignada a otro valor entero", p->vista);
    }else {
       expresion* ex = parser_expresion(p);
       espera(p, PUNTO_COMA);

@@ -56,12 +56,6 @@ void verifica(const expresion_termino* ex, auto& analisis, auto& pila) {
 
 void verifica(const expresion_binaria* ex, auto& analisis, auto& pila) {
    verifica(ex->izq, analisis, pila);
-   if(ex->operador.tipo == ASIGNACION){
-      auto p = dynamic_cast<const expresion_termino*>(ex->izq);
-      if (p == nullptr) {
-         throw error("No se puede asignar una expresion a otra", ex->vista);
-      }
-   }
    verifica(ex->der, analisis, pila);
 }
 
@@ -139,15 +133,16 @@ tabla_simbolos semantico(const arbol_sintactico& arbol, const char* argv[]) {
          verifica(s, analisis, pila);
       }
    }
+
    if (!tabla.funciones.contains(argv[1])) {
-      throw error("Funcion de inicio no declarada", argv[1], true);
+      throw error("Funcion de inicio no declarada", argv[1]);
    }else{
       tabla.funcion_inicial = argv[1];
       for (int i = 2; argv[i] != nullptr; ++i) {
          tabla.argumentos_inicial.push_back(evalua_entero(argv[i]));
       }
       if (tabla.argumentos_inicial.size( ) != tabla.funciones[argv[1]].declaracion->parametros.size( )) {
-         throw error("Numero incorrecto de argumentos", argv[1], true);
+         throw error("Numero incorrecto de argumentos", argv[1]);
       }
    }
 
