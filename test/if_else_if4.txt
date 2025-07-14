@@ -1,0 +1,9 @@
+int f(){
+    int a = 1, b = 1, c = 1;
+    if(a > b){
+        return a;
+    }else if((a <= c) && (c >= b)){
+        return b;
+    }
+    return 0;
+}

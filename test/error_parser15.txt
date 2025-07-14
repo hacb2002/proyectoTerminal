@@ -1,0 +1,4 @@
+int f(){
+    int 1a = 5;
+    return 0;
+}

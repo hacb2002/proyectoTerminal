@@ -1,0 +1,11 @@
+int f(){
+    int a = 2, b = 1;
+    if(a > b){
+        if(a == 3){
+            int res = a+b;
+            return res;
+        }else{
+            return b-a;
+        }
+    }
+}

@@ -1,0 +1,8 @@
+int g(){
+    return 1;
+}
+
+int f(){
+    int g = 10;
+    return g;
+}

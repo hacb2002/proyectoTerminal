@@ -1,0 +1,4 @@
+int f(){
+    int mi'variable = 1;
+    return 0;
+}

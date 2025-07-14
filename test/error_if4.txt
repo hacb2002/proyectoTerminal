@@ -1,0 +1,6 @@
+int f(){
+    if(int a = 3; a == 3){
+        return a;
+    }
+    return 0;
+}

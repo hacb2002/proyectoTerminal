@@ -1,0 +1,4 @@
+int f(){
+    int 1_a = 12;
+    return 1_a;
+}

@@ -1,0 +1,15 @@
+int f(int a, int b){
+    //Comentario de linea
+    return a+b+20;
+}
+
+/*
+Comentario de bloque
+*//*
+
+int factorial(int n) {
+    if (n == 0) return 1;
+    return n * factorial(n - 1);//ComentarioOcasional
+}
+
+*/
