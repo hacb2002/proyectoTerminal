@@ -17,6 +17,28 @@
             stroke-width: 2px;
             stroke: rgb(255, 51, 51);
          }
+         
+         .cuadrado_rojo {
+            fill: red;
+         }
+         
+         .texto_verde {
+            font-family: Arial;
+            font-size: 57px;
+            fill: green;
+         }
+         
+         .caja_marco {
+            fill: none;
+            stroke-width: 10px;
+            stroke: black;
+         }
+         .caja_letrero1 {
+            fill: red;
+         }
+         .caja_letrero2 {
+            fill: blue;
+         }
       </style>
    </head>
    <body onload="ejemplo( )">
@@ -64,8 +86,23 @@
             return svg.appendChild(obj);
          }
          
+        
+         function dibuja_funcion_caja(x, y, nombre, clase = "") {
+            return [
+               dibuja_cuadrado(x, y, 200, 200, clase + "_marco"),
+               dibuja_texto(x + 50, y + 50, nombre, clase + "_letrero1"),
+               dibuja_texto(x + 100, y + 100, nombre, clase + "_letrero2")
+            ];
+         }
+         
          function elimina_elemento(obj) {
-            obj.remove( );
+            if (Array.isArray(obj)) {
+               for (let elem of obj) {
+                  elem.remove( );
+               }
+            } else {
+               obj.remove( );
+            }
          }
          
          function retardo(ms) {
@@ -76,9 +113,9 @@
          }
          
          async function ejemplo( ) {
-            let c = dibuja_cuadrado(50, 50, 100, 100);
+            let c = dibuja_cuadrado(50, 50, 100, 100, "cuadrado_rojo");
             await retardo(ms);
-            let t = dibuja_texto(200, 200, "hola");
+            let t = dibuja_texto(200, 200, "hola", "texto_verde");
             await retardo(ms);
             let f = dibuja_flecha(c, t, "flecha_negra");
             await retardo(ms);
@@ -87,6 +124,10 @@
             elimina_elemento(t);
             await retardo(ms);
             elimina_elemento(c);
+            await retardo(ms);
+            let x = dibuja_funcion_caja(0, 0, "f", "caja");
+            await retardo(ms);
+            elimina_elemento(x);
          }
       </script>
    </body>
