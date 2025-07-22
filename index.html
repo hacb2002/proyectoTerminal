@@ -23,6 +23,16 @@
             stroke-width: 2px;
             stroke: yellow;
         }
+        .marco{
+            fill: white;
+            stroke: black;
+            stroke-width: 0.5;
+        }
+
+        .textoMarco{
+            font-size: 4px;
+        }
+
     </style>
 </head>
 <body onload="inicializa()">
@@ -41,46 +51,52 @@ int contar_digitos(int n) {
     <button type="button" id="siguiente">Siguiente</button>
 
     <svg id="svg" viewbox="0 0 500 500">
-        <marker id="triangle" viewBox="0 0 10 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="7" markerHeight="5" orient="auto">
-            <path d="M 0,0 L 10,5 L 0,10 Z" />
-        </marker>
 
     </svg><br>
 
     <script>
         let instrucciones = [];
-        let actual = 0;  // Índice actual de instrucción
-
+        let actual = 0;
+        let maxVariables = 0;
+        let maxAnchoVariables = 0;
+        let maxAnchoTotal = 0;
         let svg = document.getElementById("svg");
-        let ms = 333;
-        
-        let h = 20;
+        let ms = 1000;
+        let altura = 25;
 
         function coordenadas_elemento(obj) {
             return [ Number(obj.getAttribute("x")), Number(obj.getAttribute("y")) ];
         }
 
-        function dibuja_cuadrado(x, y, w = "100", h = "20", clase = "", fillColor = "white", strokeColor = "black") {
+        function dibuja_marco(x, y, w = maxAnchoTotal, h = altura, clase = "marco") {
             let obj = document.createElementNS("http://www.w3.org/2000/svg", "rect");
             obj.setAttribute("class", clase);
             obj.setAttribute("x", x);
             obj.setAttribute("y", y);
             obj.setAttribute("width", w);
             obj.setAttribute("height", h);
-            obj.setAttribute("fill", fillColor);          // Relleno blanco
-            obj.setAttribute("stroke", strokeColor);      // Borde negro
-            obj.setAttribute("stroke-width", "0.5");        // Grosor del borde (opcional)
             return svg.appendChild(obj);
         }
         
-        function dibuja_texto(x, y, texto, clase = "", tamannio = "4") {
+        function dibuja_texto(x, y, texto, clase = "textoMarco") {
             let obj = document.createElementNS("http://www.w3.org/2000/svg", "text");
             obj.setAttribute("class", clase);
             obj.setAttribute("x", x);
             obj.setAttribute("y", y);
-            obj.setAttribute("font-size", tamannio); // Aquí se usa el valor de 'tamannio'
             obj.textContent = texto;
             return svg.appendChild(obj);
+        }
+
+        function medirTexto(texto, clase = "textoMarco") {
+            const temp = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            temp.setAttribute("x", -9999);
+            temp.setAttribute("y", -9999);
+            if (clase) temp.setAttribute("class", clase);
+            temp.textContent = texto;
+            svg.appendChild(temp);
+            const bbox = temp.getBBox();
+            svg.removeChild(temp);
+            return [bbox.height, bbox.width];
         }
         
         function dibuja_flecha(obj1, obj2, clase = "") {
@@ -96,17 +112,110 @@ int contar_digitos(int n) {
         }
         
         function elimina_elemento(obj) {
+            svg.removeChild(obj);
             obj.remove( );
+        }
+
+        class DibujoFuncion{
+            nombreFuncion;
+            constructor(marco){
+                this.marco = marco;
+                this.variables = new Map();
+            }
+            agregarVariable(id, nombre, valor, marco){
+                this.variables.set(id, {nombre, valor, marco});
+            }
+            agregarNombreFuncion(nombreFuncion){
+                this.nombreFuncion = nombreFuncion;
+            }
+            eliminarVariable(id){
+                let variable = this.variables.get(id);
+                elimina_elemento(variable.nombre);
+                elimina_elemento(variable.valor);
+                elimina_elemento(variable.marco);
+                this.variables.delete(id);
+            }
+            obtenerCoordenadasMarco(){
+                return coordenadas_elemento(this.marco);
+            }
+            destruirFuncion(){
+                elimina_elemento(this.marco);
+                elimina_elemento(this.nombreFuncion);
+                for (const [clave, obj] of this.variables) {
+                    elimina_elemento(obj.nombre);
+                    elimina_elemento(obj.valor);
+                    elimina_elemento(obj.marco);
+                }
+            }
+            obtenerCoordenadasUltimaVariable() {
+                const vars = Array.from(this.variables.values());
+                if (vars.length === 0) {
+                    return null; 
+                }
+                const ultimaVar = vars[vars.length - 1];
+                return coordenadas_elemento(ultimaVar.marco);
+            }
+        }
+
+        async function dibujarSecuencia() {
+            let funciones = [];
+            for (let ins of instrucciones) {
+                if (ins.startsWith("LLAMA")) {
+                    let funcion = obtenerLlamada(ins);
+                    let sig = [20, 10];
+                    if(funciones.length > 0){
+                        sig = funciones.at(-1).obtenerCoordenadasMarco();
+                        sig[1] += altura+1;
+                    }
+                    let marco_funcion = new DibujoFuncion(dibuja_marco(sig[0], sig[1]));
+                    let nombreFuncion = dibuja_texto(sig[0]+1, sig[1]+5, funcion.nombreFuncion);
+                    marco_funcion.agregarNombreFuncion(nombreFuncion);
+                    let var_x = sig[0]+2;
+                    let var_y = sig[1]+10;
+                    for(let variable of funcion.variables){
+                        let identificador = variable.id_variable;
+                        let marcoVariable = dibuja_marco(var_x, var_y, maxAnchoVariables, 5);
+                        let valorVariable = dibuja_texto(var_x+1, var_y+4, variable.valor);
+                        let nombreVariable = dibuja_texto(var_x, var_y+5+5, variable.nombre);
+                        marco_funcion.agregarVariable(identificador, nombreVariable, valorVariable, marcoVariable);
+                        var_x += maxAnchoVariables+2;
+                    }
+                    funciones.push(marco_funcion);
+                }
+                else if(ins.startsWith("DECLARA")){
+                    let declaracion = obtenerDeclaracion(ins);
+                    let coordenadas = funciones[funciones.length-1].obtenerCoordenadasUltimaVariable();
+                    let xsig = coordenadas[0]+maxAnchoVariables+2;
+                    let ysig = coordenadas[1];
+                    let marco = dibuja_marco(xsig, ysig, maxAnchoVariables, 5);
+                    let valorVariable = dibuja_texto(xsig+1, ysig+4, declaracion.valor);
+                    let nombreVariable = dibuja_texto(xsig, ysig+5+5, declaracion.nombre);
+                    funciones[funciones.length-1].agregarVariable(declaracion.id_variable,nombreVariable,valorVariable,marco);
+                }
+                else if(ins.startsWith("DESTRUYE")){
+                    let destructor = obtenerDestructor(ins);
+                    funciones[funciones.length-1].eliminarVariable(destructor);
+                }
+                else if(ins.startsWith("REGRESA")){
+                    let retorno = obtenerRetorno(ins);
+                    let coordenadas = funciones.at(-1).obtenerCoordenadasMarco();
+                    funciones[funciones.length-1].destruirFuncion();
+                    const texto = "REGRESA "+retorno;
+                    const x = coordenadas[0];
+                    const y = coordenadas[1]+altura/2;
+                    let regresa = dibuja_texto(x, y, texto);
+                    await retardo(ms);
+                    elimina_elemento(regresa);
+                    funciones.pop();
+                }
+                await retardo(ms);
+            }
         }
 
         function retardo(ms) {
             return new Promise(function (resolver) {
                 setTimeout(() => resolver(), ms);
             });
-        }
-
-        function procesar_instruccion( ){
-
         }
 
         async function inicializa() {
@@ -117,8 +226,10 @@ int contar_digitos(int n) {
                 const codigo = document.getElementById("codigo").value;
                 const invocacion = document.getElementById("invocacion").value;
                 const textoSalida = traduce(codigo, invocacion);
+                document.getElementById("salida").value = textoSalida;
                 instrucciones = textoSalida.trim().split("\n");
                 actual = 0;
+                await calcular_marcos();
                 await dibujarSecuencia();
             };
 
@@ -126,84 +237,77 @@ int contar_digitos(int n) {
             document.getElementById("siguiente").onclick = sig;
         }
 
-        async function dibujarSecuencia() {
-            let marco_funcion = [];
-            let xi = 10, yi = -10;
+        async function calcular_marcos(){
+            let funciones = [];
             for (let ins of instrucciones) {
                 if (ins.startsWith("LLAMA")) {
-                    let funcion = [];
-                    yi = yi + h + 5;
-                    const matchFuncion = ins.match(/LLAMA\s+[-\d]+:[-\d]+\s+(\w+)/);
-                    const nombreFuncion = matchFuncion[1];
-                    let yt = yi + 5;
-                    let anchoTotal = medirTexto(nombreFuncion).width + 10;
-                    const regexVariables = /(\w+)#(\d+)\s*=\s*(\d+)/g;
-                    let match, variables = [];
-                    while ((match = regexVariables.exec(ins)) !== null) {
-                        const variable = match[1];
-                        const id_variable = match[2];
-                        const numero = match[3];
-
-                        const varText = variable + "#";
-                        const idText = id_variable + "=";
-
-                        anchoTotal += medirTexto(varText).width;
-                        anchoTotal += medirTexto(idText).width;
-                        anchoTotal += medirTexto(numero).width + 5;
-
-                        variables.push({ nombre: variable, id: id_variable, valor: numero });
+                    let expresion = obtenerLlamada(ins);
+                    maxVariables = Math.max(maxVariables, expresion.variables.length);
+                    funciones.push(expresion.variables.length);
+                    maxAnchoTotal = Math.max(medirTexto(expresion.nombreFuncion)[1]+2, maxAnchoTotal);
+                    for(let variable of expresion.variables){
+                        const nombre = medirTexto(variable.nombre)[1]+2;
+                        const valor = medirTexto(variable.valor)[1]+2;
+                        maxAnchoVariables = Math.max(maxAnchoVariables, nombre, valor);
                     }
-                    let c = dibuja_cuadrado(xi, yi, anchoTotal, h);
-                    funcion.push(c);
-
-                    let xt = xi + 5;
-                    funcion.push(dibuja_texto(xt, yt, nombreFuncion));
-                    xt += medirTexto(nombreFuncion).width + 5;
-
-                    for (let v of variables) {
-                        let varText = v.nombre + "#";
-                        let idText = v.id + "=";
-
-                        funcion.push(dibuja_texto(xt, yt, varText));
-                        xt += medirTexto(varText).width;
-
-                        funcion.push(dibuja_texto(xt, yt, idText));
-                        xt += medirTexto(idText).width;
-
-                        funcion.push(dibuja_texto(xt, yt, v.valor));
-                        xt += medirTexto(v.valor).width + 5;
-                    }
-                    marco_funcion.push(funcion);
+                    maxAnchoTotal = Math.max(maxAnchoTotal, maxVariables*(4+maxAnchoVariables));
+                }
+                else if(ins.startsWith("DECLARA")){
+                    let variable = obtenerDeclaracion(ins);
+                    const nombre = medirTexto(variable.nombre)[1]+2;
+                    const valor = medirTexto(variable.valor)[1]+2;
+                    maxAnchoVariables = Math.max(nombre, valor, maxAnchoVariables);
+                    funciones[funciones.length-1] += 1;
+                    maxVariables = Math.max(funciones.at(-1), maxVariables);
+                    maxAnchoTotal = Math.max(maxVariables*(4+maxAnchoVariables), maxAnchoTotal);
+                }
+                else if(ins.startsWith("DESTRUYE")){
+                    funciones[funciones.length-1] -= 1;
                 }
                 else if(ins.startsWith("REGRESA")){
-                    const matchFuncion = ins.match(/REGRESA\s+\d+:\d+\s+(\d+)/);
-                    const regreso = matchFuncion[1];
-                    for(let elemento of marco_funcion.at(-1)){
-                        elimina_elemento(elemento);
-                    }
-                    marco_funcion.pop();
-                    let temp = dibuja_texto(xi+20, yi+h/2, "REGRESA "+regreso);
-                    yi = yi-h-5;
-                    await retardo(ms);
-                    elimina_elemento(temp);
+                    funciones.pop();
                 }
-                document.getElementById("salida").value = ins;
-                await retardo(ms);
             }
         }
 
+        function obtenerLlamada(ins){
+            const matchFuncion = ins.match(/LLAMA\s+[-\d]+:[-\d]+\s+(\w+)/);
+            const nombreFuncion = matchFuncion[1];
+            const regexVariables = /(\w+)#(\d+)\s*=\s*(\d+)/g;
+            let match, variables = [];
+            while ((match = regexVariables.exec(ins)) !== null) {
+                const nombre = match[1];
+                const id_variable = match[2];
+                const valor = match[3];
+                variables.push({id_variable, nombre, valor});
+            }
+            return {nombreFuncion, variables};
+        }
 
-        function medirTexto(texto, tamannio = "4", clase = "") {
-            const temp = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            temp.setAttribute("x", -9999); // fuera de vista
-            temp.setAttribute("y", -9999);
-            temp.setAttribute("font-size", tamannio);
-            if (clase) temp.setAttribute("class", clase);
-            temp.textContent = texto;
-            svg.appendChild(temp);
-            const bbox = temp.getBBox();
-            svg.removeChild(temp);
-            return bbox;
+        function obtenerDeclaracion(ins) {
+            const regex = /^DECLARA\s+\d+:\d+\s+([A-Za-z_]\w*)#(\d+)=(\d+)$/;
+            const match = regex.exec(ins);
+            if (!match) {
+                throw new Error(`Formato de declaración inválido: "${ins}"`);
+            }
+            const [, nombre, id_variable, valor] = match;
+            return { id_variable, nombre, valor };
+        }
+
+        function obtenerDestructor(ins) {
+            const regex = /^DESTRUYE\s+\d+:\d+\s+([A-Za-z_]\w*)#(\d+)$/;
+            const match = regex.exec(ins);
+            if (!match) {
+                throw new Error(`Formato de destructor inválido: "${ins}"`);
+            }
+            const [, nombre, id_variable] = match;
+            return id_variable;
+        }
+
+
+        function obtenerRetorno(ins){
+            const matchFuncion = ins.match(/REGRESA\s+\d+:\d+\s+(\d+)/);
+            return matchFuncion[1];
         }
 
 
