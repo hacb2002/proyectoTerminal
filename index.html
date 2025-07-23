@@ -16,12 +16,12 @@
         }
 
         svg line {
-            marker-end: url(#triangle);
+            marker-end: url(#marker12);
         }
 
         .flecha_negra {
-            stroke-width: 2px;
-            stroke: yellow;
+            stroke-width: 1px;
+            stroke: black;
         }
         .marco{
             fill: white;
@@ -50,9 +50,44 @@ int contar_digitos(int n) {
     <button type="button" id="anterior">Anterior</button>
     <button type="button" id="siguiente">Siguiente</button>
 
-    <svg id="svg" viewbox="0 0 500 500">
-
-    </svg><br>
+      <svg id="svg" viewbox="0 0 500 500">      <!-- y otra cosa completamente independiente son las "unidades" internas de la zona de dibujo -->
+         <marker id="triangle" viewBox="0 0 10 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="7" markerHeight="5" orient="auto">
+            <path d="M 0,0 L 10,5 L 0,10 Z" />
+         </marker>
+       <marker
+       style="overflow:visible"
+       id="ArrowWideHeavy"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="Wide, heavy arrow"
+       markerWidth="1.5"
+       markerHeight="1.5"
+       viewBox="0 0 1 1"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid">
+      <path
+         style="fill:context-stroke;fill-rule:evenodd;stroke:none"
+         d="m 1,0 -3,3 h -2 l 3,-3 -3,-3 h 2 z"
+         id="path5" />
+      </marker>
+      <marker
+       markerWidth="4"
+       markerHeight="4"
+       refX="42.740033"
+       refY="38.740066"
+       orient="auto"
+       id="marker12"
+       viewBox="0 0 85.4800668 77.48013296"
+       preserveAspectRatio="xMidYMid">
+      <path
+         style="fill:context-stroke;fill-rule:evenodd;stroke:none"
+         d="M 0.94487997,76.535342 C 27.401573,57.637704 58.07874,46.299122 84.535436,38.740066 58.07874,31.181011 27.401573,19.842429 0.94487997,0.94479089 0.94487997,16.062901 24.062991,34.960539 27.842519,38.740066 24.062991,42.519594 0.94487997,61.417232 0.94487997,76.535342 Z"
+         id="path11-5-2-7"
+         sodipodi:nodetypes="ccccc" />
+      </marker>
+      </svg><br> 
 
     <script>
         let instrucciones = [];
@@ -63,7 +98,7 @@ int contar_digitos(int n) {
         let svg = document.getElementById("svg");
         let ms = 1000;
         let altura = 25;
-
+        let retardos = [];
         function coordenadas_elemento(obj) {
             return [ Number(obj.getAttribute("x")), Number(obj.getAttribute("y")) ];
         }
@@ -99,9 +134,16 @@ int contar_digitos(int n) {
             return [bbox.height, bbox.width];
         }
         
-        function dibuja_flecha(obj1, obj2, clase = "") {
+         function dibuja_flecha(obj1, obj2, clase = "") {
+            if(obj1 === null || obj2 === null){
+                return null;
+            }
             let [x1, y1] = coordenadas_elemento(obj1);
+            x1 += obj1.getAttribute("width")/2;
+            y1 += obj1.getAttribute("height")/1;
             let [x2, y2] = coordenadas_elemento(obj2);
+            x2 += obj2.getAttribute("width")/2;
+            y2-=2;
             let obj = document.createElementNS("http://www.w3.org/2000/svg", "line");
             obj.setAttribute("class", clase);
             obj.setAttribute("x1", x1);
@@ -109,7 +151,7 @@ int contar_digitos(int n) {
             obj.setAttribute("x2", x2);
             obj.setAttribute("y2", y2);
             return svg.appendChild(obj);
-        }
+         }
         
         function elimina_elemento(obj) {
             svg.removeChild(obj);
@@ -118,6 +160,7 @@ int contar_digitos(int n) {
 
         class DibujoFuncion{
             nombreFuncion;
+            flecha;
             constructor(marco){
                 this.marco = marco;
                 this.variables = new Map();
@@ -146,6 +189,7 @@ int contar_digitos(int n) {
                     elimina_elemento(obj.valor);
                     elimina_elemento(obj.marco);
                 }
+                if(this.flecha !== null) elimina_elemento(this.flecha);
             }
             obtenerCoordenadasUltimaVariable() {
                 const vars = Array.from(this.variables.values());
@@ -155,17 +199,23 @@ int contar_digitos(int n) {
                 const ultimaVar = vars[vars.length - 1];
                 return coordenadas_elemento(ultimaVar.marco);
             }
+            obtenerMarco(){
+                return this.marco;
+            }
         }
 
         async function dibujarSecuencia() {
             let funciones = [];
+            let gap = 15;
             for (let ins of instrucciones) {
                 if (ins.startsWith("LLAMA")) {
                     let funcion = obtenerLlamada(ins);
                     let sig = [20, 10];
+                    let marco_ant = null;
                     if(funciones.length > 0){
                         sig = funciones.at(-1).obtenerCoordenadasMarco();
-                        sig[1] += altura+1;
+                        sig[1] += altura+gap;
+                        marco_ant = funciones.at(-1).obtenerMarco();
                     }
                     let marco_funcion = new DibujoFuncion(dibuja_marco(sig[0], sig[1]));
                     let nombreFuncion = dibuja_texto(sig[0]+1, sig[1]+5, funcion.nombreFuncion);
@@ -180,6 +230,7 @@ int contar_digitos(int n) {
                         marco_funcion.agregarVariable(identificador, nombreVariable, valorVariable, marcoVariable);
                         var_x += maxAnchoVariables+2;
                     }
+                    marco_funcion.flecha = dibuja_flecha(marco_ant, marco_funcion.marco, "flecha_negra");
                     funciones.push(marco_funcion);
                 }
                 else if(ins.startsWith("DECLARA")){
@@ -207,6 +258,8 @@ int contar_digitos(int n) {
                     await retardo(ms);
                     elimina_elemento(regresa);
                     funciones.pop();
+                }else if(ins.startsWith("ERROR")){
+                    alert(ins);
                 }
                 await retardo(ms);
             }
