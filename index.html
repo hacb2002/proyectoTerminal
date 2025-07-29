@@ -10,7 +10,7 @@
         }
 
         svg {
-            min-height: 1200px;
+            height: 50%;
             aspect-ratio: 1 / 1;
             border: 1px solid black;
         }
@@ -23,11 +23,26 @@
             stroke-width: 1px;
             stroke: black;
         }
+
+        .flecha_gris {
+            stroke-width: 1px;
+            stroke: gray;
+        }
+
         .marco{
             fill: white;
             stroke: black;
             stroke-width: 0.5;
         }
+
+        .marco_regresado {
+            fill: white;
+            fill-opacity: 0.5;
+            stroke: gray;
+            stroke-opacity: 0.8;
+            stroke-width: 0.5;
+        }
+
 
         .textoMarco{
             font-size: 4px;
@@ -37,18 +52,20 @@
 </head>
 <body onload="inicializa()">
     Código: <textarea id="codigo">
-int contar_digitos(int n) {
-    if (n < 10){
-        return 1;
-    } 
-    return 1 + contar_digitos(n / 10);
+int fibonacci(int n) {
+    if (n <= 1){
+        return n;
+    }
+    return fibonacci(n - 1) + fibonacci(n - 2);
 }
     </textarea><br>
-    Invocación: <input type="text" id="invocacion" value="contar_digitos 156165132"><br>
+    Invocación: <input type="text" id="invocacion" value="fibonacci 4"><br>
     Salida: <textarea id="salida" readonly></textarea><br>
     <button type="button" id="boton">Procesar</button>
     <button type="button" id="anterior">Anterior</button>
     <button type="button" id="siguiente">Siguiente</button>
+    <button type="button" id="pila">Pila</button>
+    <button type="button" id="arbol">Árbol</button>
 
       <svg id="svg" viewbox="0 0 500 500">      <!-- y otra cosa completamente independiente son las "unidades" internas de la zona de dibujo -->
          <marker id="triangle" viewBox="0 0 10 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="7" markerHeight="5" orient="auto">
@@ -87,22 +104,36 @@ int contar_digitos(int n) {
          id="path11-5-2-7"
          sodipodi:nodetypes="ccccc" />
       </marker>
+      <g id="capaDibujo"></g>
       </svg><br> 
 
     <script>
+        let funciones = [];
         let instrucciones = [];
+        let instruccionesArbol = [];
         let actual = 0;
         let maxVariables = 0;
         let maxAnchoVariables = 0;
         let maxAnchoTotal = 0;
+        let maxArgumentos = 0;
+        let maxAnchoNodo = 0;
         let svg = document.getElementById("svg");
         let ms = 1000;
         let altura = 25;
-        let retardos = [];
+        let gap = 15;
+        let coordenadasNodos;
+        let ejecucionId = 0;
+        
+        async function limpiarSVG(){
+            ejecucionId++;
+            const capaDibujo = document.getElementById("capaDibujo");
+            while (capaDibujo.firstChild) {
+                capaDibujo.removeChild(capaDibujo.firstChild);
+            }
+        }
         function coordenadas_elemento(obj) {
             return [ Number(obj.getAttribute("x")), Number(obj.getAttribute("y")) ];
         }
-
         function dibuja_marco(x, y, w = maxAnchoTotal, h = altura, clase = "marco") {
             let obj = document.createElementNS("http://www.w3.org/2000/svg", "rect");
             obj.setAttribute("class", clase);
@@ -110,7 +141,7 @@ int contar_digitos(int n) {
             obj.setAttribute("y", y);
             obj.setAttribute("width", w);
             obj.setAttribute("height", h);
-            return svg.appendChild(obj);
+            return capaDibujo.appendChild(obj);
         }
         
         function dibuja_texto(x, y, texto, clase = "textoMarco") {
@@ -119,7 +150,7 @@ int contar_digitos(int n) {
             obj.setAttribute("x", x);
             obj.setAttribute("y", y);
             obj.textContent = texto;
-            return svg.appendChild(obj);
+            return capaDibujo.appendChild(obj);
         }
 
         function medirTexto(texto, clase = "textoMarco") {
@@ -128,13 +159,13 @@ int contar_digitos(int n) {
             temp.setAttribute("y", -9999);
             if (clase) temp.setAttribute("class", clase);
             temp.textContent = texto;
-            svg.appendChild(temp);
+            capaDibujo.appendChild(temp);
             const bbox = temp.getBBox();
-            svg.removeChild(temp);
+            capaDibujo.appendChild(temp);
             return [bbox.height, bbox.width];
         }
         
-         function dibuja_flecha(obj1, obj2, clase = "") {
+        function dibuja_flecha(obj1, obj2, clase = "flecha_negra") {
             if(obj1 === null || obj2 === null){
                 return null;
             }
@@ -150,13 +181,51 @@ int contar_digitos(int n) {
             obj.setAttribute("y1", y1);
             obj.setAttribute("x2", x2);
             obj.setAttribute("y2", y2);
-            return svg.appendChild(obj);
-         }
-        
-        function elimina_elemento(obj) {
-            svg.removeChild(obj);
-            obj.remove( );
+            return capaDibujo.appendChild(obj);
         }
+        
+        function dibuja_flecha_inversa(obj1, obj2, clase = "flecha_gris") {
+            if(obj1 === null || obj2 === null){
+                return null;
+            }
+            let [x1, y1] = coordenadas_elemento(obj1);
+            x1 += obj1.getAttribute("width")/2;
+            y1 -= 1;
+            let [x2, y2] = coordenadas_elemento(obj2);
+            x2 += obj2.getAttribute("width")/2;
+            y2 += obj2.getAttribute("height")/1+2;
+            let obj = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            obj.setAttribute("class", clase);
+            obj.setAttribute("x1", x1);
+            obj.setAttribute("y1", y1);
+            obj.setAttribute("x2", x2);
+            obj.setAttribute("y2", y2);
+            return capaDibujo.appendChild(obj);
+        }
+
+        function elimina_elemento(obj) {
+            if (obj && obj.parentNode) {
+                obj.remove();
+            }
+        }
+
+        class NodoFuncion {
+            contenido;
+            variables;
+            fila;
+            columna;
+            hijos;
+            marco;
+            texto;
+            flecha;
+            constructor(variables) {
+                this.hijos = [];
+                this.variables = variables;
+                this.fila = null;
+                this.columna = null;
+            }
+        }
+
 
         class DibujoFuncion{
             nombreFuncion;
@@ -204,9 +273,10 @@ int contar_digitos(int n) {
             }
         }
 
-        async function dibujarSecuencia() {
+        async function dibujarPila() {
+            limpiarSVG();
+            let idr = ejecucionId;
             let funciones = [];
-            let gap = 15;
             for (let ins of instrucciones) {
                 if (ins.startsWith("LLAMA")) {
                     let funcion = obtenerLlamada(ins);
@@ -255,73 +325,83 @@ int contar_digitos(int n) {
                     const x = coordenadas[0];
                     const y = coordenadas[1]+altura/2;
                     let regresa = dibuja_texto(x, y, texto);
-                    await retardo(ms);
+                    await retardo(ms, idr);
                     elimina_elemento(regresa);
                     funciones.pop();
                 }else if(ins.startsWith("ERROR")){
                     alert(ins);
                 }
-                await retardo(ms);
+                await retardo(ms, idr);
             }
         }
 
-        function retardo(ms) {
-            return new Promise(function (resolver) {
-                setTimeout(() => resolver(), ms);
+        function retardo(ms, id) {
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    if (id === ejecucionId) resolve();
+                }, ms);
             });
         }
 
-        async function inicializa() {
-            let wasm = await cargador_wasm();
-            let traduce = wasm.cwrap("traduce", "string", ["string", "string"]);
-
-            document.getElementById("boton").onclick = async function() {
-                const codigo = document.getElementById("codigo").value;
-                const invocacion = document.getElementById("invocacion").value;
-                const textoSalida = traduce(codigo, invocacion);
-                document.getElementById("salida").value = textoSalida;
-                instrucciones = textoSalida.trim().split("\n");
-                actual = 0;
-                await calcular_marcos();
-                await dibujarSecuencia();
-            };
-
-            document.getElementById("anterior").onclick = ant;
-            document.getElementById("siguiente").onclick = sig;
-        }
-
         async function calcular_marcos(){
-            let funciones = [];
+            limpiarSVG();
+            maxVariables = 0;
+            maxAnchoVariables = 0;
+            maxAnchoTotal = 0;
+            maxArgumentos = 0;
+            maxAnchoNodo = 0;
+            let stack = [];
+            funciones = [];
             for (let ins of instrucciones) {
                 if (ins.startsWith("LLAMA")) {
                     let expresion = obtenerLlamada(ins);
-                    maxVariables = Math.max(maxVariables, expresion.variables.length);
-                    funciones.push(expresion.variables.length);
-                    maxAnchoTotal = Math.max(medirTexto(expresion.nombreFuncion)[1]+2, maxAnchoTotal);
-                    for(let variable of expresion.variables){
-                        const nombre = medirTexto(variable.nombre)[1]+2;
-                        const valor = medirTexto(variable.valor)[1]+2;
-                        maxAnchoVariables = Math.max(maxAnchoVariables, nombre, valor);
+                    instruccionesArbol.push(ins);
+                    let actual = new NodoFuncion(expresion.variables.length);
+                    maxVariables = Math.max(maxVariables, actual.variables);
+                    maxArgumentos = Math.max(maxArgumentos, actual.variables);
+                    funciones.push(actual);
+                    if (stack.length > 0) {
+                        stack.at(-1).hijos.push(actual);
                     }
-                    maxAnchoTotal = Math.max(maxAnchoTotal, maxVariables*(4+maxAnchoVariables));
+                    stack.push(actual);
+                    maxAnchoTotal = Math.max(medirTexto(expresion.nombreFuncion)[1] + 2, maxAnchoTotal);
+                    let contenido = expresion.nombreFuncion+" (";
+                    for(let j = 0; j<expresion.variables.length; ++j){
+                        const nombre = medirTexto(expresion.variables[j].nombre)[1] + 2;
+                        if(j<expresion.variables.length-1){
+                            contenido += expresion.variables[j].valor + ", ";
+                        }else{
+                            contenido += expresion.variables[j].valor;
+                        }
+                        const valor = medirTexto(expresion.variables[j].valor)[1] + 2;
+                        maxAnchoVariables = Math.max(maxAnchoVariables, valor, nombre);
+                    }
+                    contenido += ") ";
+                    actual.contenido = contenido;
+                    maxAnchoNodo = Math.max(maxAnchoNodo, medirTexto(contenido)[1]+2);
+                    maxAnchoTotal = Math.max(maxAnchoTotal, maxVariables * (4 + maxAnchoVariables));
                 }
-                else if(ins.startsWith("DECLARA")){
+                else if (ins.startsWith("DECLARA")) {
                     let variable = obtenerDeclaracion(ins);
-                    const nombre = medirTexto(variable.nombre)[1]+2;
-                    const valor = medirTexto(variable.valor)[1]+2;
-                    maxAnchoVariables = Math.max(nombre, valor, maxAnchoVariables);
-                    funciones[funciones.length-1] += 1;
-                    maxVariables = Math.max(funciones.at(-1), maxVariables);
-                    maxAnchoTotal = Math.max(maxVariables*(4+maxAnchoVariables), maxAnchoTotal);
+                    const nombre = medirTexto(variable.nombre)[1] + 2;
+                    const valor = medirTexto(variable.valor)[1] + 2;
+                    maxAnchoVariables = Math.max(maxAnchoVariables, valor, nombre);
+                    stack.at(-1).variables += 1;
+                    maxVariables = Math.max(stack.at(-1).variables, maxVariables);
+                    maxAnchoTotal = Math.max(maxVariables * (4 + maxAnchoVariables), maxAnchoTotal);
                 }
-                else if(ins.startsWith("DESTRUYE")){
-                    funciones[funciones.length-1] -= 1;
+                else if (ins.startsWith("DESTRUYE")) {
+                    stack.at(-1).variables -= 1;
                 }
-                else if(ins.startsWith("REGRESA")){
-                    funciones.pop();
+                else if (ins.startsWith("REGRESA")) {
+                    instruccionesArbol.push(ins);
+                    stack.pop();
+                }else{
+                    instruccionesArbol.push(ins);
                 }
             }
         }
+
 
         function obtenerLlamada(ins){
             const matchFuncion = ins.match(/LLAMA\s+[-\d]+:[-\d]+\s+(\w+)/);
@@ -363,20 +443,82 @@ int contar_digitos(int n) {
             return matchFuncion[1];
         }
 
-
-        function sig() {
-            if (actual < instrucciones.length - 1) {
-                actual++;
-                document.getElementById("salida").value = instrucciones[actual];
+        function calcularCoordenadasArbol(nodo, fila, columnaRef, ancho, gap) {
+            let aumentoFila = 5+gap;
+            let aumentoColumna = ancho+gap;
+            let numHijos = nodo.hijos.length;
+            let particion = Math.floor(numHijos / 2) + (numHijos % 2);
+            for (let i = 0; i < particion; ++i) {
+                columnaRef = calcularCoordenadasArbol(nodo.hijos[i], fila + aumentoFila, columnaRef, ancho, gap);
             }
+            if (numHijos % 2 === 0) {
+                nodo.fila = fila;
+                nodo.columna = columnaRef;
+                columnaRef += aumentoColumna;
+            } else {
+                nodo.fila = fila;
+                nodo.columna = nodo.hijos[particion - 1].columna;
+            }
+            for (let i = particion; i < numHijos; ++i) {
+                columnaRef = calcularCoordenadasArbol(nodo.hijos[i], fila + aumentoFila, columnaRef, ancho, gap);
+            }
+            return columnaRef;
         }
 
-        function ant() {
-            if (actual > 0) {
-                actual--;
-                document.getElementById("salida").value = instrucciones[actual];
+        async function dibujarArbol() {
+            calcularCoordenadasArbol(funciones[0], 8, 5, maxAnchoNodo, 5);
+            limpiarSVG();
+            let idr = ejecucionId;
+            let i = 0;
+            let stack = [];
+            for (let ins of instruccionesArbol) {
+                console.log(ins);
+                if (ins.startsWith("LLAMA")) {
+                    let f = funciones[i++];
+                    f.marco = dibuja_marco(f.columna, f.fila, maxAnchoNodo, 5);
+                    f.texto = dibuja_texto(f.columna + 1, f.fila + 4, f.contenido);
+                    if (stack.length > 0) {
+                        f.flecha = dibuja_flecha(stack.at(-1).marco, f.marco);
+                    }
+                    stack.push(f);
+                } else if(ins.startsWith("REGRESA")) {
+                    let valor = obtenerRetorno(ins);
+                    let f = stack.at(-1);
+                    f.marco.setAttribute("class", "marco_regresado");
+                    f.texto.setAttribute("fill", "gray");
+                    stack.pop();
+                    if(stack.length === 0){
+                        dibuja_texto(funciones[0].columna, funciones[0].fila-2, "REGRESA "+valor);
+                    }else{
+                        elimina_elemento(f.flecha);
+                        f.flecha = dibuja_flecha_inversa(f.marco, stack.at(-1).marco);
+                        let [x1, y1] = coordenadas_elemento(f.marco);
+                        dibuja_texto(x1+maxAnchoNodo/2, y1-2, valor);
+                    }
+                }else{
+                    alert(ins);
+                }
+                await retardo(ms, idr);
             }
         }
+        
+
+        async function inicializa() {
+            let wasm = await cargador_wasm();
+            let traduce = wasm.cwrap("traduce", "string", ["string", "string"]);
+            document.getElementById("boton").onclick = async function() {
+                const codigo = document.getElementById("codigo").value;
+                const invocacion = document.getElementById("invocacion").value;
+                const textoSalida = traduce(codigo, invocacion);
+                document.getElementById("salida").value = textoSalida;
+                instrucciones = textoSalida.trim().split("\n");
+                actual = 0;
+                await calcular_marcos();
+            };
+            document.getElementById("pila").onclick = dibujarPila;
+            document.getElementById("arbol").onclick = dibujarArbol;
+        }
+
     </script>
 </body>
 </html>
