@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <script src="main.js"></script>
+    <script src="prueba.js"></script>
     <style>
         textarea {
             width: 500px;
@@ -10,7 +11,7 @@
         }
 
         svg {
-            height: 50%;
+            min-height: 1000px;
             aspect-ratio: 1 / 1;
             border: 1px solid black;
         }
@@ -131,9 +132,7 @@ int fibonacci(int n) {
                 capaDibujo.removeChild(capaDibujo.firstChild);
             }
         }
-        function coordenadas_elemento(obj) {
-            return [ Number(obj.getAttribute("x")), Number(obj.getAttribute("y")) ];
-        }
+
         function dibuja_marco(x, y, w = maxAnchoTotal, h = altura, clase = "marco") {
             let obj = document.createElementNS("http://www.w3.org/2000/svg", "rect");
             obj.setAttribute("class", clase);
@@ -204,9 +203,7 @@ int fibonacci(int n) {
         }
 
         function elimina_elemento(obj) {
-            if (obj && obj.parentNode) {
-                obj.remove();
-            }
+            obj?.remove();
         }
 
         class NodoFuncion {
@@ -502,7 +499,6 @@ int fibonacci(int n) {
             }
         }
         
-
         async function inicializa() {
             let wasm = await cargador_wasm();
             let traduce = wasm.cwrap("traduce", "string", ["string", "string"]);
