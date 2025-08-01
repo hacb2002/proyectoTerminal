@@ -11,7 +11,7 @@
         }
 
         svg {
-            min-height: 1000px;
+            min-height: 2000px;
             aspect-ratio: 1 / 1;
             border: 1px solid black;
         }
@@ -484,8 +484,7 @@ int fibonacci(int n) {
             xMax = 0;
             yMax = 0;
             calcularCoordenadasArbol(funciones[0], 5, 5, Math.max(maxAnchoNodo, maxAnchoRetorno), 5);
-            console.log("x: "+xMax+"; y: "+yMax);
-            document.getElementById("svg").setAttribute("viewBox", `0 0 ${xMax} ${yMax}`);
+            svg.setAttribute("viewBox", `0 0 ${xMax} ${yMax}`);
             limpiarSVG();
             let idr = ejecucionId;
             let i = 0;
