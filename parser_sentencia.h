@@ -4,6 +4,7 @@
 #include "lexer.h"
 #include "parser_aux.h"
 #include "parser_expresion.h"
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -18,49 +19,49 @@ struct sentencia {
 sentencia::~sentencia( ) = default;
 
 struct sentencia_expresion : sentencia {
-   expresion* ex;
+   std::unique_ptr<expresion> ex;
 
-   sentencia_expresion(const control_vista& cv, expresion* e)
-   : sentencia(cv), ex(e) {
+   sentencia_expresion(const control_vista& cv, std::unique_ptr<expresion> e)
+   : sentencia(cv), ex(std::move(e)) {
    }
 };
 
 struct sentencia_declaracion : sentencia {
    std::vector<token> nombres;
-   std::vector<expresion*> inicializadores;
+   std::vector<std::unique_ptr<expresion>> inicializadores;
 
-   sentencia_declaracion(const control_vista& cv, std::vector<token>&& n, std::vector<expresion*>&& i)
+   sentencia_declaracion(const control_vista& cv, std::vector<token>&& n, std::vector<std::unique_ptr<expresion>>&& i)
    : sentencia(cv), nombres(std::move(n)), inicializadores(std::move(i)) {
    }
 };
 
 struct sentencia_if : sentencia {
-   expresion* condicion;
-   std::vector<sentencia*> parte_si;
-   std::vector<sentencia*> parte_no;
+   std::unique_ptr<expresion> condicion;
+   std::vector<std::unique_ptr<sentencia>> parte_si;
+   std::vector<std::unique_ptr<sentencia>> parte_no;
 
-   sentencia_if(const control_vista& cv, expresion* c, std::vector<sentencia*>&& s, std::vector<sentencia*>&& n)
-   : sentencia(cv), condicion(c), parte_si(std::move(s)), parte_no(std::move(n)) {
+   sentencia_if(const control_vista& cv, std::unique_ptr<expresion> c, std::vector<std::unique_ptr<sentencia>>&& s, std::vector<std::unique_ptr<sentencia>>&& n)
+   : sentencia(cv), condicion(std::move(c)), parte_si(std::move(s)), parte_no(std::move(n)) {
    }
 };
 
 struct sentencia_return : sentencia {
-   expresion* valor;
+   std::unique_ptr<expresion> valor;
 
-   sentencia_return(const control_vista& cv, expresion* v)
-   : sentencia(cv), valor(v) {
+   sentencia_return(const control_vista& cv, std::unique_ptr<expresion> v)
+   : sentencia(cv), valor(std::move(v)) {
    }
 };
 
-sentencia* parser_sentencia(const token*& p) {
+std::unique_ptr<sentencia> parser_sentencia(const token*& p) {
    control_vista cv(p);
    if (p->tipo == IF) {
       ++p;
       espera(p, PARENTESIS_IZQ);
-      expresion* condicion = parser_expresion(p);
+      std::unique_ptr<expresion> condicion = parser_expresion(p);
       espera(p, PARENTESIS_DER);
       espera(p, LLAVE_IZQ);
-      std::vector<sentencia*> parte_si, parte_no;
+      std::vector<std::unique_ptr<sentencia>> parte_si, parte_no;
       while(p->tipo != LLAVE_DER){
          parte_si.push_back(parser_sentencia(p));
       }
@@ -77,16 +78,16 @@ sentencia* parser_sentencia(const token*& p) {
             espera(p, LLAVE_DER);
          }
       }
-      return new sentencia_if(cv, condicion, std::move(parte_si), std::move(parte_no));
+      return std::make_unique<sentencia_if>(cv, std::move(condicion), std::move(parte_si), std::move(parte_no));
    } else if (p->tipo == RETURN) {
       ++p;
-      expresion* valor = parser_expresion(p);
+      std::unique_ptr<expresion> valor = parser_expresion(p);
       espera(p, PUNTO_COMA);
-      return new sentencia_return(cv, valor);
+      return std::make_unique<sentencia_return>(cv, std::move(valor));
    } else if (p->tipo == INT) {
       ++p;
       std::vector<token> nombres;
-      std::vector<expresion*> inicializadores;
+      std::vector<std::unique_ptr<expresion>> inicializadores;
       for (;;) {
          nombres.emplace_back(espera(p, IDENTIFICADOR));
          espera(p, ASIGNACION);
@@ -97,11 +98,11 @@ sentencia* parser_sentencia(const token*& p) {
          espera(p, COMA);
       }
       espera(p, PUNTO_COMA);
-      return new sentencia_declaracion(cv, std::move(nombres), std::move(inicializadores));
+      return std::make_unique<sentencia_declaracion>(cv, std::move(nombres), std::move(inicializadores));
    }else {
-      expresion* ex = parser_expresion(p);
+      std::unique_ptr<expresion> ex = parser_expresion(p);
       espera(p, PUNTO_COMA);
-      return new sentencia_expresion(cv, ex);
+      return std::make_unique<sentencia_expresion>(cv, std::move(ex));
    }
 }
 

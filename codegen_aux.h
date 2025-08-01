@@ -23,27 +23,27 @@ std::string concatena(const auto&... v) {
    return oss.str( );
 }
 
-int evalua(const expresion* ex, auto&... params) {
-   if (auto p = dynamic_cast<const expresion_termino*>(ex); p != nullptr) {
+int evalua(const std::unique_ptr<expresion>& ex, auto&... params) {
+   if (auto p = dynamic_cast<const expresion_termino*>(ex.get( )); p != nullptr) {
       return evalua(p, params...);
-   } else if (auto p = dynamic_cast<const expresion_binaria*>(ex); p != nullptr) {
+   } else if (auto p = dynamic_cast<const expresion_binaria*>(ex.get( )); p != nullptr) {
       return evalua(p, params...);
-   } else if (auto p = dynamic_cast<const expresion_prefija*>(ex); p != nullptr) {
+   } else if (auto p = dynamic_cast<const expresion_prefija*>(ex.get( )); p != nullptr) {
       return evalua(p, params...);
-   } else if (auto p = dynamic_cast<const expresion_llamada_funcion*>(ex); p != nullptr) {
+   } else if (auto p = dynamic_cast<const expresion_llamada_funcion*>(ex.get( )); p != nullptr) {
       return evalua(p, params...);
    }
    return -1;
 }
 
-void evalua(const sentencia* s, auto&... params) {
-   if (auto p = dynamic_cast<const sentencia_expresion*>(s); p != nullptr) {
+void evalua(const std::unique_ptr<sentencia>& s, auto&... params) {
+   if (auto p = dynamic_cast<const sentencia_expresion*>(s.get( )); p != nullptr) {
       return evalua(p, params...);
-   } else if (auto p = dynamic_cast<const sentencia_declaracion*>(s); p != nullptr) {
+   } else if (auto p = dynamic_cast<const sentencia_declaracion*>(s.get( )); p != nullptr) {
       return evalua(p, params...);
-   } else if (auto p = dynamic_cast<const sentencia_if*>(s); p != nullptr) {
+   } else if (auto p = dynamic_cast<const sentencia_if*>(s.get( )); p != nullptr) {
       return evalua(p, params...);
-   } else if (auto p = dynamic_cast<const sentencia_return*>(s); p != nullptr) {
+   } else if (auto p = dynamic_cast<const sentencia_return*>(s.get( )); p != nullptr) {
       return evalua(p, params...);
    }
 }

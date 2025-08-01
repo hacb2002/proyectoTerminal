@@ -10,57 +10,57 @@ std::ostream& operator<<(std::ostream& os, const token& t) {
    return os << t.vista << " " << t.tipo;
 }
 
-std::ostream& operator<<(std::ostream& os, const expresion* ex);
+std::ostream& operator<<(std::ostream& os, const std::unique_ptr<expresion>& ex);
 
-std::ostream& operator<<(std::ostream& os, const std::vector<expresion*>& lista) {
+std::ostream& operator<<(std::ostream& os, const std::vector<std::unique_ptr<expresion>>& lista) {
    for (int i = 0; i < lista.size( ); ++i) {
       os << lista[i] << (i + 1 < lista.size( ) ? "," : "");
    }
    return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const expresion* ex) {
-   if (auto p = dynamic_cast<const expresion_termino*>(ex); p != nullptr) {
+std::ostream& operator<<(std::ostream& os, const std::unique_ptr<expresion>& ex) {
+   if (auto p = dynamic_cast<const expresion_termino*>(ex.get( )); p != nullptr) {
       return os << p->termino.vista;
-   } else if (auto p = dynamic_cast<const expresion_binaria*>(ex); p != nullptr) {
+   } else if (auto p = dynamic_cast<const expresion_binaria*>(ex.get( )); p != nullptr) {
       return os << "(" << p->izq << p->operador.vista << p->der << ")";
-   } else if (auto p = dynamic_cast<const expresion_prefija*>(ex); p != nullptr) {
+   } else if (auto p = dynamic_cast<const expresion_prefija*>(ex.get( )); p != nullptr) {
       return os << p->operador.vista << "(" << p->ex << ")";
-   } else if (auto p = dynamic_cast<const expresion_llamada_funcion*>(ex); p != nullptr) {
+   } else if (auto p = dynamic_cast<const expresion_llamada_funcion*>(ex.get( )); p != nullptr) {
       return os << p->nombre.vista << "(" << p->argumentos << ")";
    } else {
       return os;
    }
 }
 
-std::ostream& operator<<(std::ostream& os, const sentencia* ex);
+std::ostream& operator<<(std::ostream& os, const std::unique_ptr<sentencia>& ex);
 
-std::ostream& operator<<(std::ostream& os, const std::vector<sentencia*> lista) {
+std::ostream& operator<<(std::ostream& os, const std::vector<std::unique_ptr<sentencia>>& lista) {
    for (int i = 0; i < lista.size( ); ++i) {
       os << lista[i] << "\n";
    }
    return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const sentencia_declaracion*& s) {
+std::ostream& operator<<(std::ostream& os, const sentencia_declaracion* s) {
    if (s != nullptr) {
       for(int i = 0; i<s->nombres.size(); ++i){
-         os << s->nombres[i].vista 
-            << (s->inicializadores[i] != nullptr ? " = " : " ") 
+         os << s->nombres[i].vista
+            << (s->inicializadores[i] != nullptr ? " = " : " ")
             << s->inicializadores[i]
             << "\n";
       }
    }
    return os;
 };
-std::ostream& operator<<(std::ostream& os, const sentencia* s) {
-   if (auto p = dynamic_cast<const sentencia_expresion*>(s); p != nullptr) {
+std::ostream& operator<<(std::ostream& os, const std::unique_ptr<sentencia>& s) {
+   if (auto p = dynamic_cast<const sentencia_expresion*>(s.get( )); p != nullptr) {
       return os << p->ex << ";";
-   } else if (auto p = dynamic_cast<const sentencia_declaracion*>(s); p != nullptr) {
-      return os << reinterpret_cast<const sentencia_declaracion*&>(s) << ";";
-   } else if (auto p = dynamic_cast<const sentencia_if*>(s); p != nullptr) {
+   } else if (auto p = dynamic_cast<const sentencia_declaracion*>(s.get( )); p != nullptr) {
+      return os << p << ";";
+   } else if (auto p = dynamic_cast<const sentencia_if*>(s.get( )); p != nullptr) {
       return os << "if " << p->condicion << "{\n" << p->parte_si << "} else {\n" << p->parte_no << "}";
-   } else if (auto p = dynamic_cast<const sentencia_return*>(s); p != nullptr) {
+   } else if (auto p = dynamic_cast<const sentencia_return*>(s.get( )); p != nullptr) {
       return os << "return " << p->valor << ";";
    } else {
       return os;
@@ -142,7 +142,7 @@ std::ostream& operator<<(std::ostream& os, const std::map<const token*, int>& es
    return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const std::vector<std::string> instrucciones){
+std::ostream& operator<<(std::ostream& os, const std::vector<std::string>& instrucciones){
    for(const auto& instruccion : instrucciones){
       os << instruccion << "\n";
    }

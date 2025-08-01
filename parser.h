@@ -9,7 +9,7 @@
 struct sentencia_funcion {
    token nombre;
    std::vector<token> parametros;
-   std::vector<sentencia*> sentencias;
+   std::vector<std::unique_ptr<sentencia>> sentencias;
 };
 
 struct arbol_sintactico {
@@ -44,7 +44,7 @@ arbol_sintactico parser(const std::vector<token>& tokens) {
       std::vector<token> parametros = parser_lista_parametros(p);
       espera(p, PARENTESIS_DER);
       espera(p, LLAVE_IZQ);
-      std::vector<sentencia*> sentencias;
+      std::vector<std::unique_ptr<sentencia>> sentencias;
       while (p->tipo != LLAVE_DER) {
          sentencias.push_back(parser_sentencia(p));
       }

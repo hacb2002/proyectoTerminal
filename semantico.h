@@ -78,7 +78,7 @@ void verifica(const expresion_llamada_funcion* ex, auto& analisis, auto& pila) {
    }
 
    analisis.funcion_referida[ex] = p->declaracion;
-   for (const expresion* ex : ex->argumentos) {
+   for (const std::unique_ptr<expresion>& ex : ex->argumentos) {
       verifica(ex, analisis, pila);
    }
 }
@@ -131,7 +131,7 @@ tabla_simbolos semantico(const arbol_sintactico& arbol, const std::span<std::str
       for (const token& parametro : funcion.parametros) {
          pila.bloques[0][parametro.vista] = &parametro;
       }
-      for (const sentencia* s : funcion.sentencias) {
+      for (const std::unique_ptr<sentencia>& s : funcion.sentencias) {
          verifica(s, analisis, pila);
       }
    }

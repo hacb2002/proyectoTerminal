@@ -78,7 +78,7 @@ int evalua(const expresion_prefija* ex, auto& analisis, auto& tabla, auto& estad
 
 int evalua(const expresion_llamada_funcion* ex, auto& analisis, auto& tabla, auto& estado, auto& salida) {
    std::vector<int> argumentos;
-   for (const expresion* ex : ex->argumentos) {
+   for (const std::unique_ptr<expresion>& ex : ex->argumentos) {
       argumentos.push_back(evalua(ex, analisis, tabla, estado, salida));
    }
    return llama(ex, analisis.funcion_referida.find(ex)->second->nombre.vista, argumentos, tabla, salida);
@@ -133,7 +133,7 @@ int llama(const expresion_llamada_funcion* ex, const std::string_view& nombre, a
    }
 
    try {
-      for (const sentencia* s : decl->sentencias) {
+      for (const std::unique_ptr<sentencia>& s : decl->sentencias) {
          evalua(s, analisis, tabla, estado, salida);
       }
       throw error_ejecucion("Fin de función sin valor devuelto", decl->nombre.vista);
