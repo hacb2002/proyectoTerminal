@@ -25,9 +25,11 @@
             stroke: black;
         }
 
-        .flecha_gris {
+        .flecha_regreso {
             stroke-width: 1px;
             stroke: gray;
+            stroke-opacity: 0.8;
+            stroke-dasharray: 4 2;
         }
 
         .marco{
@@ -49,6 +51,10 @@
             font-size: 4px;
         }
 
+        .textoRegreso {
+            font-size: 4px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body onload="inicializa()">
@@ -68,7 +74,7 @@ int fibonacci(int n) {
     <button type="button" id="pila">Pila</button>
     <button type="button" id="arbol">Árbol</button>
 
-      <svg id="svg" viewbox="0 0 500 500">      <!-- y otra cosa completamente independiente son las "unidades" internas de la zona de dibujo -->
+      <svg id="svg" viewbox="0 0 500 500"> 
          <marker id="triangle" viewBox="0 0 10 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="7" markerHeight="5" orient="auto">
             <path d="M 0,0 L 10,5 L 0,10 Z" />
          </marker>
@@ -118,12 +124,15 @@ int fibonacci(int n) {
         let maxAnchoTotal = 0;
         let maxArgumentos = 0;
         let maxAnchoNodo = 0;
+        let maxAnchoRetorno = 0;
+        let maxPila = 0;
         let svg = document.getElementById("svg");
         let ms = 1000;
         let altura = 25;
         let gap = 15;
-        let coordenadasNodos;
         let ejecucionId = 0;
+        let xMax = 0;
+        let yMax = 0;
         
         async function limpiarSVG(){
             ejecucionId++;
@@ -272,6 +281,8 @@ int fibonacci(int n) {
 
         async function dibujarPila() {
             limpiarSVG();
+            let y = (altura+gap)*maxPila;
+            document.getElementById("svg").setAttribute("viewBox", `0 0 ${maxAnchoTotal} ${y}`);
             let idr = ejecucionId;
             let funciones = [];
             for (let ins of instrucciones) {
@@ -347,9 +358,12 @@ int fibonacci(int n) {
             maxAnchoTotal = 0;
             maxArgumentos = 0;
             maxAnchoNodo = 0;
+            maxPila = 0;
+            instruccionesArbol = [];
             let stack = [];
             funciones = [];
             for (let ins of instrucciones) {
+                maxPila = Math.max(maxPila, stack.length);
                 if (ins.startsWith("LLAMA")) {
                     let expresion = obtenerLlamada(ins);
                     instruccionesArbol.push(ins);
@@ -391,6 +405,7 @@ int fibonacci(int n) {
                     stack.at(-1).variables -= 1;
                 }
                 else if (ins.startsWith("REGRESA")) {
+                    maxAnchoRetorno = Math.max(maxAnchoRetorno, medirTexto(obtenerRetorno(ins))[1]);
                     instruccionesArbol.push(ins);
                     stack.pop();
                 }else{
@@ -403,7 +418,7 @@ int fibonacci(int n) {
         function obtenerLlamada(ins){
             const matchFuncion = ins.match(/LLAMA\s+[-\d]+:[-\d]+\s+(\w+)/);
             const nombreFuncion = matchFuncion[1];
-            const regexVariables = /(\w+)#(\d+)\s*=\s*(\d+)/g;
+            const regexVariables = /(\w+)#(\d+)\s*=\s*([+-]?\d+)/g;
             let match, variables = [];
             while ((match = regexVariables.exec(ins)) !== null) {
                 const nombre = match[1];
@@ -415,7 +430,7 @@ int fibonacci(int n) {
         }
 
         function obtenerDeclaracion(ins) {
-            const regex = /^DECLARA\s+\d+:\d+\s+([A-Za-z_]\w*)#(\d+)=(\d+)$/;
+            const regex = /^DECLARA\s+\d+:\d+\s+([A-Za-z_]\w*)#(\d+)=([+-]?\d+)$/;
             const match = regex.exec(ins);
             if (!match) {
                 throw new Error(`Formato de declaración inválido: "${ins}"`);
@@ -436,13 +451,13 @@ int fibonacci(int n) {
 
 
         function obtenerRetorno(ins){
-            const matchFuncion = ins.match(/REGRESA\s+\d+:\d+\s+(\d+)/);
+            const matchFuncion = ins.match(/REGRESA\s+\d+:\d+\s+([+-]?\d+)/);
             return matchFuncion[1];
         }
 
         function calcularCoordenadasArbol(nodo, fila, columnaRef, ancho, gap) {
-            let aumentoFila = 5+gap;
-            let aumentoColumna = ancho+gap;
+            let aumentoFila = 50+gap;
+            let aumentoColumna = ancho+1;
             let numHijos = nodo.hijos.length;
             let particion = Math.floor(numHijos / 2) + (numHijos % 2);
             for (let i = 0; i < particion; ++i) {
@@ -451,25 +466,31 @@ int fibonacci(int n) {
             if (numHijos % 2 === 0) {
                 nodo.fila = fila;
                 nodo.columna = columnaRef;
-                columnaRef += aumentoColumna;
+                columnaRef += aumentoColumna/2;
             } else {
                 nodo.fila = fila;
                 nodo.columna = nodo.hijos[particion - 1].columna;
             }
+            xMax = Math.max(xMax, nodo.columna+aumentoColumna);
+            yMax = Math.max(yMax, nodo.fila+6);
             for (let i = particion; i < numHijos; ++i) {
                 columnaRef = calcularCoordenadasArbol(nodo.hijos[i], fila + aumentoFila, columnaRef, ancho, gap);
             }
             return columnaRef;
+
         }
 
         async function dibujarArbol() {
-            calcularCoordenadasArbol(funciones[0], 8, 5, maxAnchoNodo, 5);
+            xMax = 0;
+            yMax = 0;
+            calcularCoordenadasArbol(funciones[0], 5, 5, Math.max(maxAnchoNodo, maxAnchoRetorno), 5);
+            console.log("x: "+xMax+"; y: "+yMax);
+            document.getElementById("svg").setAttribute("viewBox", `0 0 ${xMax} ${yMax}`);
             limpiarSVG();
             let idr = ejecucionId;
             let i = 0;
             let stack = [];
             for (let ins of instruccionesArbol) {
-                console.log(ins);
                 if (ins.startsWith("LLAMA")) {
                     let f = funciones[i++];
                     f.marco = dibuja_marco(f.columna, f.fila, maxAnchoNodo, 5);
@@ -485,12 +506,11 @@ int fibonacci(int n) {
                     f.texto.setAttribute("fill", "gray");
                     stack.pop();
                     if(stack.length === 0){
-                        dibuja_texto(funciones[0].columna, funciones[0].fila-2, "REGRESA "+valor);
+                        dibuja_texto(funciones[0].columna, funciones[0].fila-2, valor, "textoRegreso");
                     }else{
-                        elimina_elemento(f.flecha);
-                        f.flecha = dibuja_flecha_inversa(f.marco, stack.at(-1).marco);
+                        f.flecha.setAttribute("class", "flecha_regreso");
                         let [x1, y1] = coordenadas_elemento(f.marco);
-                        dibuja_texto(x1+maxAnchoNodo/2, y1-2, valor);
+                        dibuja_texto(x1, y1-5, valor, "textoRegreso");
                     }
                 }else{
                     alert(ins);
