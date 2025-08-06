@@ -38,6 +38,20 @@
             stroke-width: 0.5;
         }
 
+        rect.seleccionado {
+            stroke: red;
+            stroke-width: 1;
+        }
+
+        text.seleccionado {
+            fill: red;
+            font-weight: bold;
+        }
+
+        svg .animable {
+            transition: all 0.333s linear;
+        }
+
         .marco_regresado {
             fill: white;
             fill-opacity: 0.5;
@@ -60,6 +74,10 @@
 <body onload="inicializa()">
     Código: <textarea id="codigo">
 int fibonacci(int n) {
+    if(n){
+        int hola = 2;
+        int peperrito = 23;
+    }
     if (n <= 1){
         return n;
     }
@@ -117,8 +135,9 @@ int fibonacci(int n) {
     <script>
         let funciones = [];
         let instrucciones = [];
+        let instruccionesPila = [];
         let instruccionesArbol = [];
-        let actual = 0;
+        let paso = 0;
         let maxVariables = 0;
         let maxAnchoVariables = 0;
         let maxAnchoTotal = 0;
@@ -131,9 +150,81 @@ int fibonacci(int n) {
         let altura = 25;
         let gap = 15;
         let ejecucionId = 0;
-        let xMax = 0;
-        let yMax = 0;
-        
+        let xMax = 500;
+        let yMax = 500;
+        let tipoDibujo = -1;
+        let detener = false;
+        let stackArbol = [];
+        let itFuncion = 0;
+        let instrucciones_ant_arbol = [];
+        let instrucciones_ant_pila = [];
+        let stackPila = [];
+        let idr = 0;
+        let regresaPila = null;
+        let mapaFunciones = new Map();
+        async function inicializa() {
+            let wasm = await cargador_wasm();
+            let traduce = wasm.cwrap("traduce", "string", ["string", "string"]);
+            document.getElementById("boton").onclick = async function() {
+                const codigo = document.getElementById("codigo").value;
+                const invocacion = document.getElementById("invocacion").value;
+                const textoSalida = traduce(codigo, invocacion);
+                document.getElementById("salida").value = textoSalida;
+                instrucciones = textoSalida.trim().split("\n");
+                actual = 0;
+                await calcular_marcos();
+            };
+            document.getElementById("pila").onclick = dibujarPila;
+            document.getElementById("arbol").onclick = dibujarArbol;
+            document.getElementById("anterior").onclick = ant;
+            document.getElementById("siguiente").onclick = sig;
+        }
+
+        function retardo(ms, id) {
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    if (id === ejecucionId) resolve();
+                }, ms);
+            });
+        }
+
+        function prepara_animacion_grupo(obj, grupo) {
+            if (grupo != "") {
+                obj.classList.add("animable", grupo);
+                obj.onmouseover = obj.onmouseout = function( ) {
+                    for (let nodo of document.getElementsByClassName(grupo)){
+                        nodo.classList.toggle("seleccionado");
+                    }
+                };
+            }
+        }
+
+        function prepara_animacion_grupo(obj, grupo) {
+            if (grupo != "") {
+                obj.classList.add("animable", grupo);
+                obj.onmouseover = function() {
+                    for (let nodo of document.getElementsByClassName(grupo)) {
+                        nodo.classList.add("seleccionado");
+                    }
+                };
+                obj.onmouseout = function() {
+                    for (let nodo of document.getElementsByClassName(grupo)) {
+                        nodo.classList.remove("seleccionado");
+                    }
+                };
+            }
+        }
+
+        document.addEventListener("keydown", function(event) {
+        if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+            event.preventDefault();
+            if (event.key === "ArrowLeft") {
+                ant();
+            } else if (event.key === "ArrowRight") {
+                sig();
+            }
+        }
+    });
         async function limpiarSVG(){
             ejecucionId++;
             const capaDibujo = document.getElementById("capaDibujo");
@@ -151,7 +242,7 @@ int fibonacci(int n) {
             obj.setAttribute("height", h);
             return capaDibujo.appendChild(obj);
         }
-        
+
         function dibuja_texto(x, y, texto, clase = "textoMarco") {
             let obj = document.createElementNS("http://www.w3.org/2000/svg", "text");
             obj.setAttribute("class", clase);
@@ -191,167 +282,172 @@ int fibonacci(int n) {
             obj.setAttribute("y2", y2);
             return capaDibujo.appendChild(obj);
         }
-        
-        function dibuja_flecha_inversa(obj1, obj2, clase = "flecha_gris") {
-            if(obj1 === null || obj2 === null){
-                return null;
-            }
-            let [x1, y1] = coordenadas_elemento(obj1);
-            x1 += obj1.getAttribute("width")/2;
-            y1 -= 1;
-            let [x2, y2] = coordenadas_elemento(obj2);
-            x2 += obj2.getAttribute("width")/2;
-            y2 += obj2.getAttribute("height")/1+2;
-            let obj = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            obj.setAttribute("class", clase);
-            obj.setAttribute("x1", x1);
-            obj.setAttribute("y1", y1);
-            obj.setAttribute("x2", x2);
-            obj.setAttribute("y2", y2);
-            return capaDibujo.appendChild(obj);
-        }
-
-        function elimina_elemento(obj) {
-            obj?.remove();
-        }
-
-        class NodoFuncion {
-            contenido;
-            variables;
-            fila;
-            columna;
-            hijos;
-            marco;
-            texto;
-            flecha;
-            constructor(variables) {
-                this.hijos = [];
-                this.variables = variables;
-                this.fila = null;
-                this.columna = null;
-            }
-        }
-
-
-        class DibujoFuncion{
-            nombreFuncion;
-            flecha;
-            constructor(marco){
-                this.marco = marco;
-                this.variables = new Map();
-            }
-            agregarVariable(id, nombre, valor, marco){
-                this.variables.set(id, {nombre, valor, marco});
-            }
-            agregarNombreFuncion(nombreFuncion){
-                this.nombreFuncion = nombreFuncion;
-            }
-            eliminarVariable(id){
-                let variable = this.variables.get(id);
-                elimina_elemento(variable.nombre);
-                elimina_elemento(variable.valor);
-                elimina_elemento(variable.marco);
-                this.variables.delete(id);
-            }
-            obtenerCoordenadasMarco(){
-                return coordenadas_elemento(this.marco);
-            }
-            destruirFuncion(){
-                elimina_elemento(this.marco);
-                elimina_elemento(this.nombreFuncion);
-                for (const [clave, obj] of this.variables) {
-                    elimina_elemento(obj.nombre);
-                    elimina_elemento(obj.valor);
-                    elimina_elemento(obj.marco);
-                }
-                if(this.flecha !== null) elimina_elemento(this.flecha);
-            }
-            obtenerCoordenadasUltimaVariable() {
-                const vars = Array.from(this.variables.values());
-                if (vars.length === 0) {
-                    return null; 
-                }
-                const ultimaVar = vars[vars.length - 1];
-                return coordenadas_elemento(ultimaVar.marco);
-            }
-            obtenerMarco(){
-                return this.marco;
-            }
-        }
 
         async function dibujarPila() {
+            tipoDibujo = 0;
+            paso = 0;
             limpiarSVG();
-            let y = (altura+gap)*maxPila;
-            document.getElementById("svg").setAttribute("viewBox", `0 0 ${maxAnchoTotal} ${y}`);
-            let idr = ejecucionId;
-            let funciones = [];
-            for (let ins of instrucciones) {
-                if (ins.startsWith("LLAMA")) {
-                    let funcion = obtenerLlamada(ins);
-                    let sig = [20, 10];
-                    let marco_ant = null;
-                    if(funciones.length > 0){
-                        sig = funciones.at(-1).obtenerCoordenadasMarco();
-                        sig[1] += altura+gap;
-                        marco_ant = funciones.at(-1).obtenerMarco();
-                    }
-                    let marco_funcion = new DibujoFuncion(dibuja_marco(sig[0], sig[1]));
-                    let nombreFuncion = dibuja_texto(sig[0]+1, sig[1]+5, funcion.nombreFuncion);
-                    marco_funcion.agregarNombreFuncion(nombreFuncion);
-                    let var_x = sig[0]+2;
-                    let var_y = sig[1]+10;
-                    for(let variable of funcion.variables){
-                        let identificador = variable.id_variable;
-                        let marcoVariable = dibuja_marco(var_x, var_y, maxAnchoVariables, 5);
-                        let valorVariable = dibuja_texto(var_x+1, var_y+4, variable.valor);
-                        let nombreVariable = dibuja_texto(var_x, var_y+5+5, variable.nombre);
-                        marco_funcion.agregarVariable(identificador, nombreVariable, valorVariable, marcoVariable);
-                        var_x += maxAnchoVariables+2;
-                    }
-                    marco_funcion.flecha = dibuja_flecha(marco_ant, marco_funcion.marco, "flecha_negra");
-                    funciones.push(marco_funcion);
+            xMax = Math.max(500, maxAnchoTotal);
+            yMax = Math.max((altura+gap)*maxPila, 500);
+            document.getElementById("svg").setAttribute("viewBox", `0 0 ${xMax} ${yMax}`);
+            idr = ejecucionId;
+            instrucciones_ant_pila = [];
+            stackPila = [];
+            regresaPila = null;
+            detener = false;
+            for (let ins of instruccionesPila) {
+                if(detener){
+                    break;
                 }
-                else if(ins.startsWith("DECLARA")){
-                    let declaracion = obtenerDeclaracion(ins);
-                    let coordenadas = funciones[funciones.length-1].obtenerCoordenadasUltimaVariable();
-                    let xsig = coordenadas[0]+maxAnchoVariables+2;
-                    let ysig = coordenadas[1];
-                    let marco = dibuja_marco(xsig, ysig, maxAnchoVariables, 5);
-                    let valorVariable = dibuja_texto(xsig+1, ysig+4, declaracion.valor);
-                    let nombreVariable = dibuja_texto(xsig, ysig+5+5, declaracion.nombre);
-                    funciones[funciones.length-1].agregarVariable(declaracion.id_variable,nombreVariable,valorVariable,marco);
-                }
-                else if(ins.startsWith("DESTRUYE")){
-                    let destructor = obtenerDestructor(ins);
-                    funciones[funciones.length-1].eliminarVariable(destructor);
-                }
-                else if(ins.startsWith("REGRESA")){
-                    let retorno = obtenerRetorno(ins);
-                    let coordenadas = funciones.at(-1).obtenerCoordenadasMarco();
-                    funciones[funciones.length-1].destruirFuncion();
-                    const texto = "REGRESA "+retorno;
-                    const x = coordenadas[0];
-                    const y = coordenadas[1]+altura/2;
-                    let regresa = dibuja_texto(x, y, texto);
-                    await retardo(ms, idr);
-                    elimina_elemento(regresa);
-                    funciones.pop();
-                }else if(ins.startsWith("ERROR")){
-                    alert(ins);
-                }
+                sig_ins_pila(ins);
                 await retardo(ms, idr);
             }
         }
 
-        function retardo(ms, id) {
-            return new Promise(resolve => {
-                setTimeout(() => {
-                    if (id === ejecucionId) resolve();
-                }, ms);
-            });
+        async function sig_ins_pila(ins){
+            if (ins.startsWith("LLAMA")) {
+                let funcion = obtenerLlamada(ins);
+                let sig = [20, 10];
+                let marco_ant = null;
+                if(stackPila.length > 0){
+                    sig = stackPila.at(-1).obtenerCoordenadasMarco();
+                    sig[1] += altura+gap;
+                    marco_ant = stackPila.at(-1).obtenerMarco();
+                }
+                let marco_funcion = new DibujoFuncion(dibuja_marco(sig[0], sig[1]));
+                let nombreFuncion = dibuja_texto(sig[0]+1, sig[1]+5, funcion.nombreFuncion);
+                marco_funcion.agregarNombreFuncion(nombreFuncion);
+                let var_x = sig[0]+2;
+                let var_y = sig[1]+10;
+                for(let variable of funcion.variables){
+                    let identificador = variable.id_variable;
+                    let marcoVariable = dibuja_marco(var_x, var_y, maxAnchoVariables, 5);
+                    let valorVariable = dibuja_texto(var_x+1, var_y+4, variable.valor);
+                    let nombreVariable = dibuja_texto(var_x, var_y+5+5, variable.nombre);
+                    marco_funcion.agregarVariable(identificador, nombreVariable, valorVariable, marcoVariable);
+                    var_x += maxAnchoVariables+2;
+                }
+                marco_funcion.flecha = dibuja_flecha(marco_ant, marco_funcion.marco, "flecha_negra");
+                stackPila.push(marco_funcion);
+                instrucciones_ant_pila.push(new ContrainstruccionPila("LLAMA", marco_funcion));
+            }
+            else if(ins.startsWith("DECLARA")){
+                let declaracion = obtenerDeclaracion(ins);
+                let marco_funcion = stackPila.at(-1);
+                let coordenadas = marco_funcion.obtenerCoordenadasUltimaVariable();
+                let xsig = coordenadas[0]+maxAnchoVariables+2;
+                let ysig = coordenadas[1];
+                let marco = dibuja_marco(xsig, ysig, maxAnchoVariables, 5);
+                let valorVariable = dibuja_texto(xsig+1, ysig+4, declaracion.valor);
+                let nombreVariable = dibuja_texto(xsig, ysig+5+5, declaracion.nombre);
+                marco_funcion.agregarVariable(declaracion.id_variable,nombreVariable,valorVariable,marco);
+                let c_instruccion = new ContrainstruccionPila("DECLARA", marco_funcion);
+                c_instruccion.agregarIdVariable(declaracion.id_variable);
+                instrucciones_ant_pila.push(c_instruccion);
+            }
+            else if(ins.startsWith("DESTRUYE")){
+                let destructor = obtenerDestructor(ins);
+                let marco_funcion = stackPila.at(-1);
+                let marco_variable = stackPila.at(-1).variables.get(destructor);
+                
+                let nombre = marco_variable.nombre;
+                let x_nombre = nombre.getAttribute("x");
+                let y_nombre = nombre.getAttribute("y");
+                let cont_nombre = nombre.textContent;
+                let marco = marco_variable.marco;
+                let x_marco = marco.getAttribute("x");
+                let y_marco = marco.getAttribute("y");
+                let valor = marco_variable.valor;
+                let x_valor = marco.getAttribute("x");
+                let y_valor = marco.getAttribute("y");
+                let cont_valor = valor.textContent;
+                let c_instruccion = new ContrainstruccionPila("DESTRUYE", marco_funcion);
+                let elemento = new MarcoVariable(
+                    destructor,
+                    x_marco, y_marco, 
+                    x_nombre, y_nombre, cont_nombre,
+                    x_valor, y_valor, cont_valor
+                );
+                c_instruccion.agregarMarcoVariable(elemento);
+                instrucciones_ant_pila.push(c_instruccion);
+                marco_funcion.eliminarVariable(destructor);
+            }
+            else if(ins.startsWith("REGRESA")){
+                let retorno = obtenerRetorno(ins);
+                let marco_funcion = stackPila.at(-1);
+                let nombre_funcion = marco_funcion.nombreFuncion.textContent;
+                let coordenadas = marco_funcion.obtenerCoordenadasMarco();
+                let marco_anterior = new MarcoFuncion(coordenadas[0], coordenadas[1], nombre_funcion);
+                for(let [clave, valor] of marco_funcion.variables){
+                    marco_anterior.agregarVariable(
+                        new MarcoVariable(
+                            clave,
+                            valor.marco.getAttribute("x"), valor.marco.getAttribute("y"), 
+                            valor.nombre.getAttribute("x"), valor.nombre.getAttribute("y"), valor.nombre.textContent,
+                            valor.valor.getAttribute("x"), valor.valor.getAttribute("y"), valor.valor.textContent
+                        )
+                    );
+                }
+                let c_instruccion = new ContrainstruccionPila("REGRESA", marco_anterior);
+                marco_funcion.destruirFuncion();
+                const texto = "REGRESA "+retorno;
+                const x = coordenadas[0];
+                const y = coordenadas[1]+altura/2;
+                regresaPila = dibuja_texto(x, y, texto);
+                stackPila.pop();
+                instrucciones_ant_pila.push(c_instruccion);
+            }else if(ins.startsWith("ELIMINA")){
+                let copiaRetorno = regresaPila.cloneNode(true);
+                elimina_elemento(regresaPila);
+                instrucciones_ant_pila.push(new ContrainstruccionPila("ELIMINA", copiaRetorno));
+            }else{
+                alert(ins);
+            }
+            ++paso;
+        }
+
+        function ant_ins_pila(ins){
+            if(ins.accion.startsWith("LLAMA")){
+                stackPila.at(-1).destruirFuncion()
+                stackPila.pop();
+            }else if(ins.accion.startsWith("DECLARA")){
+                stackPila.at(-1).eliminarVariable(ins.id_variable);
+            }else if(ins.accion.startsWith("DESTRUYE")){
+                let funcion = stackPila.at(-1);
+                let mv = ins.marco_variable;
+                let marco = dibuja_marco(mv.x, mv.y, maxAnchoVariables, 5);
+                let nombre = dibuja_texto(mv.x_nombre, mv.y_nombre, mv.cont_nombre);
+                let valor = dibuja_texto(mv.x/1+1, mv.y/1+4, mv.cont_valor);
+                funcion.agregarVariable(mv.id, nombre, valor, marco);
+            }else if(ins.accion.startsWith("REGRESA")){
+                elimina_elemento(regresaPila);
+                let marco_ant = null;
+                if(stackPila.length > 0){
+                    marco_ant = stackPila.at(-1).obtenerMarco();
+                }
+                let marco_funcion = new DibujoFuncion(dibuja_marco(ins.elemento.x, ins.elemento.y));
+                let nombre_funcion = dibuja_texto(ins.elemento.x+1, ins.elemento.y+5, ins.elemento.nombre_funcion);
+                marco_funcion.agregarNombreFuncion(nombre_funcion);
+                for(let mv of ins.elemento.variables){
+                    let marco_variable = dibuja_marco(mv.x, mv.y, maxAnchoVariables, 5);
+                    let nombre = dibuja_texto(mv.x_nombre, mv.y_nombre, mv.cont_nombre);
+                    let valor = dibuja_texto(mv.x_valor, mv.y_valor, mv.cont_valor);
+                    marco_funcion.agregarVariable(mv.id, nombre, valor, marco_variable);
+                }
+                marco_funcion.flecha = dibuja_flecha(marco_ant, marco_funcion.marco, "flecha_negra");
+                stackPila.push(marco_funcion);
+            }else if(ins.accion.startsWith("ELIMINA")){
+                let x = ins.elemento.getAttribute("x");
+                let y = ins.elemento.getAttribute("y");
+                let texto = ins.elemento.textContent;
+                regresaPila = dibuja_texto(x, y, texto);
+            }
+            instrucciones_ant_pila.pop();
+            --paso;
         }
 
         async function calcular_marcos(){
+            instrucciones_ant_arbol = [];
             limpiarSVG();
             maxVariables = 0;
             maxAnchoVariables = 0;
@@ -360,9 +456,13 @@ int fibonacci(int n) {
             maxAnchoNodo = 0;
             maxPila = 0;
             instruccionesArbol = [];
+            instruccionesPila = [];
             let stack = [];
             funciones = [];
+            yMax = 500;
+            xMax = 500;
             for (let ins of instrucciones) {
+                instruccionesPila.push(ins);
                 maxPila = Math.max(maxPila, stack.length);
                 if (ins.startsWith("LLAMA")) {
                     let expresion = obtenerLlamada(ins);
@@ -407,52 +507,12 @@ int fibonacci(int n) {
                 else if (ins.startsWith("REGRESA")) {
                     maxAnchoRetorno = Math.max(maxAnchoRetorno, medirTexto(obtenerRetorno(ins))[1]);
                     instruccionesArbol.push(ins);
+                    instruccionesPila.push("ELIMINA");
                     stack.pop();
                 }else{
                     instruccionesArbol.push(ins);
                 }
             }
-        }
-
-
-        function obtenerLlamada(ins){
-            const matchFuncion = ins.match(/LLAMA\s+[-\d]+:[-\d]+\s+(\w+)/);
-            const nombreFuncion = matchFuncion[1];
-            const regexVariables = /(\w+)#(\d+)\s*=\s*([+-]?\d+)/g;
-            let match, variables = [];
-            while ((match = regexVariables.exec(ins)) !== null) {
-                const nombre = match[1];
-                const id_variable = match[2];
-                const valor = match[3];
-                variables.push({id_variable, nombre, valor});
-            }
-            return {nombreFuncion, variables};
-        }
-
-        function obtenerDeclaracion(ins) {
-            const regex = /^DECLARA\s+\d+:\d+\s+([A-Za-z_]\w*)#(\d+)=([+-]?\d+)$/;
-            const match = regex.exec(ins);
-            if (!match) {
-                throw new Error(`Formato de declaración inválido: "${ins}"`);
-            }
-            const [, nombre, id_variable, valor] = match;
-            return { id_variable, nombre, valor };
-        }
-
-        function obtenerDestructor(ins) {
-            const regex = /^DESTRUYE\s+\d+:\d+\s+([A-Za-z_]\w*)#(\d+)$/;
-            const match = regex.exec(ins);
-            if (!match) {
-                throw new Error(`Formato de destructor inválido: "${ins}"`);
-            }
-            const [, nombre, id_variable] = match;
-            return id_variable;
-        }
-
-
-        function obtenerRetorno(ins){
-            const matchFuncion = ins.match(/REGRESA\s+\d+:\d+\s+([+-]?\d+)/);
-            return matchFuncion[1];
         }
 
         function calcularCoordenadasArbol(nodo, fila, columnaRef, ancho, gap) {
@@ -477,61 +537,108 @@ int fibonacci(int n) {
                 columnaRef = calcularCoordenadasArbol(nodo.hijos[i], fila + aumentoFila, columnaRef, ancho, gap);
             }
             return columnaRef;
-
         }
 
         async function dibujarArbol() {
-            xMax = 0;
-            yMax = 0;
+            paso = 0;
+            tipoDibujo = 1;
+            xMax = 500;
+            yMax = 500;
             calcularCoordenadasArbol(funciones[0], 5, 5, Math.max(maxAnchoNodo, maxAnchoRetorno), 5);
             svg.setAttribute("viewBox", `0 0 ${xMax} ${yMax}`);
             limpiarSVG();
             let idr = ejecucionId;
-            let i = 0;
-            let stack = [];
+            itFuncion = 0;
+            detener = false;
+            stackArbol = [];
             for (let ins of instruccionesArbol) {
-                if (ins.startsWith("LLAMA")) {
-                    let f = funciones[i++];
-                    f.marco = dibuja_marco(f.columna, f.fila, maxAnchoNodo, 5);
-                    f.texto = dibuja_texto(f.columna + 1, f.fila + 4, f.contenido);
-                    if (stack.length > 0) {
-                        f.flecha = dibuja_flecha(stack.at(-1).marco, f.marco);
-                    }
-                    stack.push(f);
-                } else if(ins.startsWith("REGRESA")) {
-                    let valor = obtenerRetorno(ins);
-                    let f = stack.at(-1);
-                    f.marco.setAttribute("class", "marco_regresado");
-                    f.texto.setAttribute("fill", "gray");
-                    stack.pop();
-                    if(stack.length === 0){
-                        dibuja_texto(funciones[0].columna, funciones[0].fila-2, valor, "textoRegreso");
-                    }else{
-                        f.flecha.setAttribute("class", "flecha_regreso");
-                        let [x1, y1] = coordenadas_elemento(f.marco);
-                        dibuja_texto(x1, y1-5, valor, "textoRegreso");
-                    }
-                }else{
-                    alert(ins);
+                if(detener){
+                    break;
                 }
+                sig_ins_arbol(ins);
                 await retardo(ms, idr);
             }
         }
-        
-        async function inicializa() {
-            let wasm = await cargador_wasm();
-            let traduce = wasm.cwrap("traduce", "string", ["string", "string"]);
-            document.getElementById("boton").onclick = async function() {
-                const codigo = document.getElementById("codigo").value;
-                const invocacion = document.getElementById("invocacion").value;
-                const textoSalida = traduce(codigo, invocacion);
-                document.getElementById("salida").value = textoSalida;
-                instrucciones = textoSalida.trim().split("\n");
-                actual = 0;
-                await calcular_marcos();
-            };
-            document.getElementById("pila").onclick = dibujarPila;
-            document.getElementById("arbol").onclick = dibujarArbol;
+
+        async function ant() {
+            ++ejecucionId;
+            detener = true;
+            if(tipoDibujo === 0 && instrucciones_ant_pila.length > 0){
+                ant_ins_pila(instrucciones_ant_pila.at(-1));
+            }
+            else if(tipoDibujo === 1 && instrucciones_ant_arbol.length > 0){
+                ant_ins_arbol(instrucciones_ant_arbol.at(-1));
+            }
+        }
+
+        function ant_ins_arbol(ins){
+            if(ins.accion === 'L'){
+                elimina_elemento(ins.funcion.flecha);
+                elimina_elemento(ins.funcion.marco);
+                elimina_elemento(ins.funcion.texto);
+                --itFuncion;
+                stackArbol.pop();
+            }else{
+                ins.funcion.marco.setAttribute("class", "marco");
+                ins.funcion.texto.setAttribute("fill", "black");
+                if(stackArbol.length > 0){
+                    ins.funcion.flecha.setAttribute("class", "flecha_negra");
+                }
+                let id_grupo = ins.funcion.texto.textContent.replace(/[(),]/g, "l").replace(/[\s+]/g, "");
+                prepara_animacion_grupo(ins.funcion.texto, id_grupo);
+                prepara_animacion_grupo(ins.funcion.marco, id_grupo);
+                elimina_elemento(ins.funcion.textoRetorno);
+                stackArbol.push(ins.funcion);
+            }
+            instrucciones_ant_arbol.pop();
+            --paso;
+        }
+
+        async function sig() {
+            ++ejecucionId;
+            detener = true;
+            if(tipoDibujo === 0 && paso < instruccionesPila.length){
+                sig_ins_pila(instruccionesPila[paso]);
+            }
+            else if(tipoDibujo === 1 && paso < instruccionesArbol.length){
+                sig_ins_arbol(instruccionesArbol[paso]);
+            }
+        }
+
+        function sig_ins_arbol(ins){
+            if (ins.startsWith("LLAMA")) {
+                let f = funciones[itFuncion++];
+                f.marco = dibuja_marco(f.columna, f.fila, maxAnchoNodo, 5);
+                f.texto = dibuja_texto(f.columna + 1, f.fila + 4, f.contenido);
+                if (stackArbol.length > 0) {
+                    f.flecha = dibuja_flecha(stackArbol.at(-1).marco, f.marco);
+                }
+                let id_grupo = f.texto.textContent.replace(/[(),]/g, "l").replace(/[\s+]/g, "");
+                prepara_animacion_grupo(f.texto, id_grupo);
+                prepara_animacion_grupo(f.marco, id_grupo);
+                stackArbol.push(f);
+                instrucciones_ant_arbol.push(new ContrainstruccionArbol("L", f));
+            } else if(ins.startsWith("REGRESA")) {
+                let valor = obtenerRetorno(ins);
+                let f = stackArbol.at(-1);
+                f.marco.setAttribute("class", "marco_regresado");
+                f.texto.setAttribute("fill", "gray");
+                let id_grupo = f.texto.textContent.replace(/[(),]/g, "l").replace(/[\s+]/g, "");
+                prepara_animacion_grupo(f.texto, id_grupo);
+                prepara_animacion_grupo(f.marco, id_grupo);
+                stackArbol.pop();
+                if(stackArbol.length === 0){
+                    f.textoRetorno = dibuja_texto(funciones[0].columna, funciones[0].fila-2, valor, "textoRegreso");
+                }else{
+                    f.flecha.setAttribute("class", "flecha_regreso");
+                    let [x1, y1] = coordenadas_elemento(f.marco);
+                    f.textoRetorno = dibuja_texto(x1, y1-5, valor, "textoRegreso");
+                }
+                instrucciones_ant_arbol.push(new ContrainstruccionArbol("R", f));
+            }else{
+                alert(ins);
+            }
+            ++paso;
         }
 
     </script>
