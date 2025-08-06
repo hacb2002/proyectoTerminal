@@ -4,6 +4,11 @@
     <meta charset="utf-8">
     <script src="main.js"></script>
     <script src="prueba.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/clike/clike.min.js"></script>
+
+    <div id="editor"></div>
     <style>
         textarea {
             width: 500px;
@@ -72,18 +77,7 @@
     </style>
 </head>
 <body onload="inicializa()">
-    Código: <textarea id="codigo">
-int fibonacci(int n) {
-    if(n){
-        int hola = 2;
-        int peperrito = 23;
-    }
-    if (n <= 1){
-        return n;
-    }
-    return fibonacci(n - 1) + fibonacci(n - 2);
-}
-    </textarea><br>
+    Código: <div id="codigoEditor"></div><br>
     Invocación: <input type="text" id="invocacion" value="fibonacci 4"><br>
     Salida: <textarea id="salida" readonly></textarea><br>
     <button type="button" id="boton">Procesar</button>
@@ -161,15 +155,31 @@ int fibonacci(int n) {
         let stackPila = [];
         let idr = 0;
         let regresaPila = null;
-        let mapaFunciones = new Map();
+        let editor;
         async function inicializa() {
             let wasm = await cargador_wasm();
             let traduce = wasm.cwrap("traduce", "string", ["string", "string"]);
+            editor = CodeMirror(document.getElementById("codigoEditor"), {
+value: `int fibonacci(int n) {
+    if(n){
+        int hola = 2;
+        int peperrito = 23;
+    }
+    if (n <= 1){
+        return n;
+    }
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}`,
+                        mode: "text/x-csrc",
+                        lineNumbers: true,
+                        theme: "default",
+                        indentUnit: 4,
+                        extraKeys: { Tab: cm => cm.replaceSelection("    ") }
+                    });
             document.getElementById("boton").onclick = async function() {
-                const codigo = document.getElementById("codigo").value;
+                const codigo = editor.getValue();
                 const invocacion = document.getElementById("invocacion").value;
                 const textoSalida = traduce(codigo, invocacion);
-                document.getElementById("salida").value = textoSalida;
                 instrucciones = textoSalida.trim().split("\n");
                 actual = 0;
                 await calcular_marcos();
@@ -461,6 +471,8 @@ int fibonacci(int n) {
             funciones = [];
             yMax = 500;
             xMax = 500;
+            let resultado = obtenerRetorno(instrucciones.at(-1));
+            let mapaFunciones = new Map();
             for (let ins of instrucciones) {
                 instruccionesPila.push(ins);
                 maxPila = Math.max(maxPila, stack.length);
@@ -489,6 +501,11 @@ int fibonacci(int n) {
                     }
                     contenido += ") ";
                     actual.contenido = contenido;
+                    if(mapaFunciones.has(contenido)){
+                        mapaFunciones.set(contenido, mapaFunciones.get(contenido)+1);
+                    }else{
+                        mapaFunciones.set(contenido, 1);
+                    }
                     maxAnchoNodo = Math.max(maxAnchoNodo, medirTexto(contenido)[1]+2);
                     maxAnchoTotal = Math.max(maxAnchoTotal, maxVariables * (4 + maxAnchoVariables));
                 }
@@ -513,6 +530,14 @@ int fibonacci(int n) {
                     instruccionesArbol.push(ins);
                 }
             }
+            let resumen = "";
+            let rep = 0;
+            for(let [clave, valor] of mapaFunciones){
+                resumen += clave+": "+valor+"\n";
+                rep+=(valor-1);
+            }
+            document.getElementById("salida").value = 
+            "RESULTADO = "+resultado+"\n"+"Funciones repetidas: "+rep+"\n"+resumen;
         }
 
         function calcularCoordenadasArbol(nodo, fila, columnaRef, ancho, gap) {
