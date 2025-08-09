@@ -2,8 +2,9 @@
 <html>
 <head>
     <meta charset="utf-8">
+    <title>Simulador Web Recursivo de C</title>
     <script src="main.js"></script>
-    <script src="prueba.js"></script>
+    <script src="auxiliar_index.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/clike/clike.min.js"></script>
@@ -45,7 +46,7 @@
 
         rect.seleccionado {
             stroke: red;
-            stroke-width: 1;
+            stroke-width: 0.5;
         }
 
         text.seleccionado {
@@ -53,7 +54,7 @@
             font-weight: bold;
         }
 
-        svg .animable {
+        svg.animable {
             transition: all 0.333s linear;
         }
 
@@ -74,57 +75,140 @@
             font-size: 4px;
             font-weight: bold;
         }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 1fr 0.9fr;
+            gap: 16px;
+        }
+
+        header.site-header {
+            margin: 0 0 12px 0;
+            padding: 8px 0;
+            border-bottom: 1px solid #ddd;
+            font-family: system-ui, Arial, sans-serif;
+        }
+
+        header.site-header h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        #salida { 
+            width: 100%; 
+            box-sizing: border-box; 
+        }
+
+        aside.sidebar {
+            position: sticky;
+            top: 8px;
+            max-height: calc(100vh - 16px);
+            overflow: auto;
+            padding: 12px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            font-family: system-ui, Arial, sans-serif;
+            line-height: 1.4;
+        }
+
+        aside.sidebar h2 {
+            margin: 0 0 8px 0;
+            font-size: 16px;
+        }
+
+        aside.sidebar p {
+            text-align: justify;
+        }
+
+        .main-pane > * { 
+            max-width: 100%; 
+        }
     </style>
 </head>
 <body onload="inicializa()">
-    Código: <div id="codigoEditor"></div><br>
-    Invocación: <input type="text" id="invocacion" value="fibonacci 4"><br>
-    Salida: <textarea id="salida" readonly></textarea><br>
-    <button type="button" id="boton">Procesar</button>
-    <button type="button" id="anterior">Anterior</button>
-    <button type="button" id="siguiente">Siguiente</button>
-    <button type="button" id="pila">Pila</button>
-    <button type="button" id="arbol">Árbol</button>
+    <header class="site-header">
+        <h1>Simulador Web Recursivo de C</h1>
+    </header>
 
-      <svg id="svg" viewbox="0 0 500 500"> 
-         <marker id="triangle" viewBox="0 0 10 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="7" markerHeight="5" orient="auto">
+    <div class="layout">
+        <div class="main-pane">
+            Código: <div id="codigoEditor"></div><br>
+            Invocación: <input type="text" id="invocacion" value="fibonacci 4"><br>
+            Salida: <textarea id="salida" readonly></textarea><br>
+
+            <button type="button" id="procesar">Procesar</button>
+            <button type="button" id="anterior">Anterior</button>
+            <button type="button" id="siguiente">Siguiente</button>
+            <button type="button" id="pila">Pila</button>
+            <button type="button" id="arbol">Árbol</button>
+        </div>
+
+        <aside class="sidebar">
+            <h2>Descripción</h2>
+
+            <p>
+                El código que se puede ejecutar en el simulador debe estar basado en un 
+                subconjunto funcional del lenguaje C, el cual solo acepta valores enteros
+                (<code>int</code>). Además, no se permite la redeclaración de variables; por lo tanto, 
+                el siguiente ejemplo no será aceptado y se marcará como error semántico: <br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<code>int a = 10;</code><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;...<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<code>a = 20;</code><br>
+            </p>
+
+            <p>
+                Tampoco se reconocen librerías estándar de C ni ciclos, por lo que funciones como 
+                <code>printf</code> y <code>scanf</code> no están disponibles.  
+                Asimismo, los condicionales como <code>if</code>, <code>else</code> 
+                y <code>else if</code> deben incluir llaves de apertura (<code>{</code>) 
+                y de cierre (<code>}</code>).  
+                Por ejemplo, el siguiente código es inválido y se marcará como error: <br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<code>if (condicion) return 1;</code>
+            </p>
+
+            <p>
+                Se permite que una función principal llame a otras funciones, siempre que estas 
+                se hayan declarado previamente. Sin embargo, para mantener la legibilidad del dibujo, 
+                se recomienda que el número total de llamadas de función no exceda las <code>256</code>, 
+                ya que a partir de esa cantidad la visualización se dificulta considerablemente.
+            </p>
+
+            <p>
+                <strong>Procesar</strong>: interpreta el código y genera las instrucciones. <br>
+                <strong>Pila</strong>: muestra la simulación de las llamadas recursivas en formato de pila,
+                incluyendo el valor y el proceso de declaración/eliminación de las variables de cada 
+                marco de función. <br>
+                <strong>Árbol</strong>: visualiza las llamadas recursivas en formato de árbol, 
+                indicando el orden en que se realizan. <br>
+                Tanto la vista de pila como la de árbol muestran los pasos con una diferencia de un segundo. <br>
+                <strong>Anterior</strong>: retrocede un paso en la pila o en el árbol, según la vista activa. <br>
+                <strong>Siguiente</strong>: avanza un paso en la pila o en el árbol. <br>
+                La tecla <code>&larr;</code> equivale al botón <strong>Anterior</strong>, mientras que la tecla 
+                <code>&rarr;</code> equivale a <strong>Siguiente</strong> mientras el cursor está en el dibujo.
+            </p>
+        </aside>
+    </div>
+
+
+    <div class="svg-container">
+        <svg id="svg" viewbox="0 0 500 500">
+        <marker id="triangle" viewBox="0 0 10 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="7" markerHeight="5" orient="auto">
             <path d="M 0,0 L 10,5 L 0,10 Z" />
-         </marker>
-       <marker
-       style="overflow:visible"
-       id="ArrowWideHeavy"
-       refX="0"
-       refY="0"
-       orient="auto-start-reverse"
-       inkscape:stockid="Wide, heavy arrow"
-       markerWidth="1.5"
-       markerHeight="1.5"
-       viewBox="0 0 1 1"
-       inkscape:isstock="true"
-       inkscape:collect="always"
-       preserveAspectRatio="xMidYMid">
-      <path
-         style="fill:context-stroke;fill-rule:evenodd;stroke:none"
-         d="m 1,0 -3,3 h -2 l 3,-3 -3,-3 h 2 z"
-         id="path5" />
-      </marker>
-      <marker
-       markerWidth="4"
-       markerHeight="4"
-       refX="42.740033"
-       refY="38.740066"
-       orient="auto"
-       id="marker12"
-       viewBox="0 0 85.4800668 77.48013296"
-       preserveAspectRatio="xMidYMid">
-      <path
-         style="fill:context-stroke;fill-rule:evenodd;stroke:none"
-         d="M 0.94487997,76.535342 C 27.401573,57.637704 58.07874,46.299122 84.535436,38.740066 58.07874,31.181011 27.401573,19.842429 0.94487997,0.94479089 0.94487997,16.062901 24.062991,34.960539 27.842519,38.740066 24.062991,42.519594 0.94487997,61.417232 0.94487997,76.535342 Z"
-         id="path11-5-2-7"
-         sodipodi:nodetypes="ccccc" />
-      </marker>
-      <g id="capaDibujo"></g>
-      </svg><br> 
+        </marker>
+        <marker style="overflow:visible" id="ArrowWideHeavy" refX="0" refY="0" orient="auto-start-reverse"
+            markerWidth="1.5" markerHeight="1.5" viewBox="0 0 1 1" preserveAspectRatio="xMidYMid">
+            <path style="fill:context-stroke;fill-rule:evenodd;stroke:none"
+            d="m 1,0 -3,3 h -2 l 3,-3 -3,-3 h 2 z" />
+        </marker>
+        <marker markerWidth="4" markerHeight="4" refX="42.740033" refY="38.740066" orient="auto" id="marker12"
+            viewBox="0 0 85.4800668 77.48013296" preserveAspectRatio="xMidYMid">
+            <path style="fill:context-stroke;fill-rule:evenodd;stroke:none"
+            d="M 0.94487997,76.535342 C 27.401573,57.637704 58.07874,46.299122 84.535436,38.740066 58.07874,31.181011 27.401573,19.842429 0.94487997,0.94479089 0.94487997,16.062901 24.062991,34.960539 27.842519,38.740066 24.062991,42.519594 0.94487997,61.417232 0.94487997,76.535342 Z" />
+        </marker>
+        <g id="capaDibujo"></g>
+        </svg>
+    </div>
 
     <script>
         let funciones = [];
@@ -153,41 +237,195 @@
         let instrucciones_ant_arbol = [];
         let instrucciones_ant_pila = [];
         let stackPila = [];
-        let idr = 0;
         let regresaPila = null;
+        let error = "";
         let editor;
-        async function inicializa() {
-            let wasm = await cargador_wasm();
-            let traduce = wasm.cwrap("traduce", "string", ["string", "string"]);
-            editor = CodeMirror(document.getElementById("codigoEditor"), {
-value: `int fibonacci(int n) {
-    if(n){
-        int hola = 2;
-        int peperrito = 23;
-    }
+        let codigoEjemplo = 
+`int fibonacci(int n) {
     if (n <= 1){
         return n;
     }
     return fibonacci(n - 1) + fibonacci(n - 2);
-}`,
+}`;
+        async function inicializa() {
+            let wasm = await cargador_wasm();
+            let traduce = wasm.cwrap("traduce", "string", ["string", "string"]);
+            editor = CodeMirror(document.getElementById("codigoEditor"), {
+                        value: codigoEjemplo,
                         mode: "text/x-csrc",
                         lineNumbers: true,
                         theme: "default",
                         indentUnit: 4,
                         extraKeys: { Tab: cm => cm.replaceSelection("    ") }
                     });
-            document.getElementById("boton").onclick = async function() {
+            document.getElementById("procesar").onclick = async function() {
                 const codigo = editor.getValue();
                 const invocacion = document.getElementById("invocacion").value;
                 const textoSalida = traduce(codigo, invocacion);
                 instrucciones = textoSalida.trim().split("\n");
-                actual = 0;
-                await calcular_marcos();
+                paso = 0;
+                await procesar();
             };
             document.getElementById("pila").onclick = dibujarPila;
             document.getElementById("arbol").onclick = dibujarArbol;
             document.getElementById("anterior").onclick = ant;
             document.getElementById("siguiente").onclick = sig;
+        }
+
+        async function ant() {
+            ejecucionId = 1;
+            detener = true;
+            if(tipoDibujo === 0 && instrucciones_ant_pila.length > 0){
+                ant_ins_pila(instrucciones_ant_pila.at(-1));
+            }
+            else if(tipoDibujo === 1 && instrucciones_ant_arbol.length > 0){
+                ant_ins_arbol(instrucciones_ant_arbol.at(-1));
+            }
+        }
+
+        async function sig() {
+            ejecucionId = 1;
+            detener = true;
+            if(tipoDibujo === 0 && paso < instruccionesPila.length){
+                sig_ins_pila(instruccionesPila[paso]);
+            }
+            else if(tipoDibujo === 1 && paso < instruccionesArbol.length){
+                sig_ins_arbol(instruccionesArbol[paso]);
+            }
+        }
+
+        async function procesar(){
+            limpiarSVG();
+            maxVariables = 0;
+            maxAnchoVariables = 0;
+            maxAnchoTotal = 0;
+            maxArgumentos = 0;
+            maxAnchoNodo = 0;
+            maxPila = 0;
+            instruccionesArbol = [];
+            instrucciones_ant_arbol = [];
+            instruccionesPila = [];
+            instrucciones_ant_pila = [];
+            let stack = [];
+            funciones = [];
+            stackPila = [];
+            stackArbol = [];
+            xMax = 500;
+            yMax = 500;
+            error = "";
+            let resultado;
+            let mapaFunciones = new Map();
+            for (let ins of instrucciones) {
+                maxPila = Math.max(maxPila, stack.length);
+                if (ins.startsWith("LLAMA")) {
+                    instruccionesPila.push(ins);
+                    instruccionesArbol.push(ins);
+                    let expresion = obtenerLlamada(ins);
+                    let actual = new NodoFuncion(expresion.variables.length);
+                    maxVariables = Math.max(maxVariables, actual.variables);
+                    maxArgumentos = Math.max(maxArgumentos, actual.variables);
+                    funciones.push(actual);
+                    if (stack.length > 0) {
+                        stack.at(-1).hijos.push(actual);
+                    }
+                    stack.push(actual);
+                    maxAnchoTotal = Math.max(medirTexto(expresion.nombreFuncion) + 2, maxAnchoTotal);
+                    let contenido = expresion.nombreFuncion+" (";
+                    for(let j = 0; j<expresion.variables.length; ++j){
+                        const nombre = medirTexto(expresion.variables[j].nombre) + 2;
+                        if(j<expresion.variables.length-1){
+                            contenido += expresion.variables[j].valor + ", ";
+                        }else{
+                            contenido += expresion.variables[j].valor;
+                        }
+                        const valor = medirTexto(expresion.variables[j].valor) + 2;
+                        maxAnchoVariables = Math.max(maxAnchoVariables, valor, nombre);
+                    }
+                    contenido += ") ";
+                    actual.contenido = contenido;
+                    if(mapaFunciones.has(contenido)){
+                        mapaFunciones.set(contenido, mapaFunciones.get(contenido)+1);
+                    }else{
+                        mapaFunciones.set(contenido, 1);
+                    }
+                    maxAnchoNodo = Math.max(maxAnchoNodo, medirTexto(contenido)+2);
+                    maxAnchoTotal = Math.max(maxAnchoTotal, maxVariables * (4 + maxAnchoVariables));
+                }
+                else if (ins.startsWith("DECLARA")) {
+                    instruccionesPila.push(ins);
+                    let variable = obtenerDeclaracion(ins);
+                    const nombre = medirTexto(variable.nombre) + 2;
+                    const valor = medirTexto(variable.valor) + 2;
+                    maxAnchoVariables = Math.max(maxAnchoVariables, valor, nombre);
+                    stack.at(-1).variables += 1;
+                    maxVariables = Math.max(stack.at(-1).variables, maxVariables);
+                    maxAnchoTotal = Math.max(maxVariables * (4 + maxAnchoVariables), maxAnchoTotal);
+                }
+                else if (ins.startsWith("DESTRUYE")) {
+                    instruccionesPila.push(ins);
+                    stack.at(-1).variables -= 1;
+                }
+                else if (ins.startsWith("REGRESA")) {
+                    resultado = obtenerRetorno(ins);
+                    instruccionesPila.push(ins);
+                    instruccionesPila.push("ELIMINA");
+                    maxAnchoRetorno = Math.max(maxAnchoRetorno, medirTexto(obtenerRetorno(ins)));
+                    instruccionesArbol.push(ins);
+                    stack.pop();
+                }else{
+                    error += ins+"\n";
+                }
+            }
+            if(instruccionesPila.length === 0){
+                document.getElementById("salida").value = error;
+            }else{
+                let resumen = "";
+                let rep = 0;
+                for(let [clave, valor] of mapaFunciones){
+                    resumen += clave+": "+valor+"\n";
+                    rep+=(valor-1);
+                }
+                document.getElementById("salida").value =
+                "RESULTADO = "+resultado+"\n"+"Funciones repetidas: "+rep+"\n"+resumen+error;
+            }
+        }
+
+        function calcularCoordenadasArbol(nodo, fila, columnaRef, ancho, gap) {
+            let aumentoFila = 30+gap;
+            let aumentoColumna = ancho+1;
+            let numHijos = nodo.hijos.length;
+            let particion = Math.floor(numHijos / 2) + (numHijos % 2);
+            for (let i = 0; i < particion; ++i) {
+                columnaRef = calcularCoordenadasArbol(nodo.hijos[i], fila + aumentoFila, columnaRef, ancho, gap);
+            }
+            if (numHijos % 2 === 0) {
+                nodo.fila = fila;
+                nodo.columna = columnaRef;
+                columnaRef += aumentoColumna/2;
+            } else {
+                nodo.fila = fila;
+                nodo.columna = nodo.hijos[particion - 1].columna;
+            }
+            xMax = Math.max(xMax, nodo.columna+aumentoColumna);
+            yMax = Math.max(yMax, nodo.fila+6);
+            for (let i = particion; i < numHijos; ++i) {
+                columnaRef = calcularCoordenadasArbol(nodo.hijos[i], fila + aumentoFila, columnaRef, ancho, gap);
+            }
+            return columnaRef;
+        }
+
+        function medirTexto(texto, clase = "textoMarco") {
+            const temp = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            temp.setAttribute("x", -9999);
+            temp.setAttribute("y", -9999);
+            if (clase){
+                temp.setAttribute("class", clase);
+            }
+            temp.textContent = texto;
+            capaDibujo.appendChild(temp);
+            const bbox = temp.getBBox();
+            capaDibujo.appendChild(temp);
+            return bbox.width;
         }
 
         function retardo(ms, id) {
@@ -196,17 +434,6 @@ value: `int fibonacci(int n) {
                     if (id === ejecucionId) resolve();
                 }, ms);
             });
-        }
-
-        function prepara_animacion_grupo(obj, grupo) {
-            if (grupo != "") {
-                obj.classList.add("animable", grupo);
-                obj.onmouseover = obj.onmouseout = function( ) {
-                    for (let nodo of document.getElementsByClassName(grupo)){
-                        nodo.classList.toggle("seleccionado");
-                    }
-                };
-            }
         }
 
         function prepara_animacion_grupo(obj, grupo) {
@@ -225,18 +452,27 @@ value: `int fibonacci(int n) {
             }
         }
 
-        document.addEventListener("keydown", function(event) {
-        if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-            event.preventDefault();
-            if (event.key === "ArrowLeft") {
-                ant();
-            } else if (event.key === "ArrowRight") {
-                sig();
-            }
+        function esEditable(el) {
+            return el.matches('input, textarea, [contenteditable=""], [contenteditable="true"]')
+            || el.closest('.CodeMirror');
         }
-    });
+
+        document.addEventListener("keydown", function(event) {
+            if (esEditable(event.target)){
+                return;
+            }
+            if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+                event.preventDefault();
+                if (event.key === "ArrowLeft") {
+                    ant();
+                } else if (event.key === "ArrowRight") {
+                    sig();
+                }
+            }
+        });
+
         async function limpiarSVG(){
-            ejecucionId++;
+            ejecucionId = 0;
             const capaDibujo = document.getElementById("capaDibujo");
             while (capaDibujo.firstChild) {
                 capaDibujo.removeChild(capaDibujo.firstChild);
@@ -261,18 +497,6 @@ value: `int fibonacci(int n) {
             obj.textContent = texto;
             return capaDibujo.appendChild(obj);
         }
-
-        function medirTexto(texto, clase = "textoMarco") {
-            const temp = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            temp.setAttribute("x", -9999);
-            temp.setAttribute("y", -9999);
-            if (clase) temp.setAttribute("class", clase);
-            temp.textContent = texto;
-            capaDibujo.appendChild(temp);
-            const bbox = temp.getBBox();
-            capaDibujo.appendChild(temp);
-            return [bbox.height, bbox.width];
-        }
         
         function dibuja_flecha(obj1, obj2, clase = "flecha_negra") {
             if(obj1 === null || obj2 === null){
@@ -294,13 +518,13 @@ value: `int fibonacci(int n) {
         }
 
         async function dibujarPila() {
+            limpiarSVG();
+            ejecucionId = 3;
             tipoDibujo = 0;
             paso = 0;
-            limpiarSVG();
             xMax = Math.max(500, maxAnchoTotal);
             yMax = Math.max((altura+gap)*maxPila, 500);
             document.getElementById("svg").setAttribute("viewBox", `0 0 ${xMax} ${yMax}`);
-            idr = ejecucionId;
             instrucciones_ant_pila = [];
             stackPila = [];
             regresaPila = null;
@@ -310,8 +534,48 @@ value: `int fibonacci(int n) {
                     break;
                 }
                 sig_ins_pila(ins);
-                await retardo(ms, idr);
+                await retardo(ms, 3);
             }
+        }
+
+        function ant_ins_pila(ins){
+            if(ins.accion.startsWith("LLAMA")){
+                stackPila.at(-1).destruirFuncion();
+                stackPila.pop();
+            }else if(ins.accion.startsWith("DECLARA")){
+                stackPila.at(-1).eliminarVariable(ins.id_variable);
+            }else if(ins.accion.startsWith("DESTRUYE")){
+                let funcion = stackPila.at(-1);
+                let mv = ins.marco_variable;
+                let marco = dibuja_marco(mv.x, mv.y, maxAnchoVariables, 5);
+                let nombre = dibuja_texto(mv.x_nombre, mv.y_nombre, mv.cont_nombre);
+                let valor = dibuja_texto(mv.x/1+1, mv.y/1+4, mv.cont_valor);
+                funcion.agregarVariable(mv.id, nombre, valor, marco);
+            }else if(ins.accion.startsWith("REGRESA")){
+                elimina_elemento(regresaPila);
+                let marco_ant = null;
+                if(stackPila.length > 0){
+                    marco_ant = stackPila.at(-1).obtenerMarco();
+                }
+                let marco_funcion = new DibujoFuncion(dibuja_marco(ins.elemento.x, ins.elemento.y));
+                let nombre_funcion = dibuja_texto(ins.elemento.x+1, ins.elemento.y+5, ins.elemento.nombre_funcion);
+                marco_funcion.agregarNombreFuncion(nombre_funcion);
+                for(let mv of ins.elemento.variables){
+                    let marco_variable = dibuja_marco(mv.x, mv.y, maxAnchoVariables, 5);
+                    let nombre = dibuja_texto(mv.x_nombre, mv.y_nombre, mv.cont_nombre);
+                    let valor = dibuja_texto(mv.x_valor, mv.y_valor, mv.cont_valor);
+                    marco_funcion.agregarVariable(mv.id, nombre, valor, marco_variable);
+                }
+                marco_funcion.flecha = dibuja_flecha(marco_ant, marco_funcion.marco, "flecha_negra");
+                stackPila.push(marco_funcion);
+            }else if(ins.accion.startsWith("ELIMINA")){
+                let x = ins.elemento.getAttribute("x");
+                let y = ins.elemento.getAttribute("y");
+                let texto = ins.elemento.textContent;
+                regresaPila = dibuja_texto(x, y, texto);
+            }
+            instrucciones_ant_pila.pop();
+            --paso;
         }
 
         async function sig_ins_pila(ins){
@@ -359,24 +623,15 @@ value: `int fibonacci(int n) {
                 let destructor = obtenerDestructor(ins);
                 let marco_funcion = stackPila.at(-1);
                 let marco_variable = stackPila.at(-1).variables.get(destructor);
-                
                 let nombre = marco_variable.nombre;
-                let x_nombre = nombre.getAttribute("x");
-                let y_nombre = nombre.getAttribute("y");
-                let cont_nombre = nombre.textContent;
                 let marco = marco_variable.marco;
-                let x_marco = marco.getAttribute("x");
-                let y_marco = marco.getAttribute("y");
                 let valor = marco_variable.valor;
-                let x_valor = marco.getAttribute("x");
-                let y_valor = marco.getAttribute("y");
-                let cont_valor = valor.textContent;
                 let c_instruccion = new ContrainstruccionPila("DESTRUYE", marco_funcion);
                 let elemento = new MarcoVariable(
                     destructor,
-                    x_marco, y_marco, 
-                    x_nombre, y_nombre, cont_nombre,
-                    x_valor, y_valor, cont_valor
+                    marco.getAttribute("x"), marco.getAttribute("y"), 
+                    nombre.getAttribute("x"), nombre.getAttribute("y"), nombre.textContent,
+                    marco.getAttribute("x"), marco.getAttribute("y"), valor.textContent
                 );
                 c_instruccion.agregarMarcoVariable(elemento);
                 instrucciones_ant_pila.push(c_instruccion);
@@ -410,189 +665,29 @@ value: `int fibonacci(int n) {
                 let copiaRetorno = regresaPila.cloneNode(true);
                 elimina_elemento(regresaPila);
                 instrucciones_ant_pila.push(new ContrainstruccionPila("ELIMINA", copiaRetorno));
-            }else{
-                alert(ins);
             }
             ++paso;
         }
 
-        function ant_ins_pila(ins){
-            if(ins.accion.startsWith("LLAMA")){
-                stackPila.at(-1).destruirFuncion()
-                stackPila.pop();
-            }else if(ins.accion.startsWith("DECLARA")){
-                stackPila.at(-1).eliminarVariable(ins.id_variable);
-            }else if(ins.accion.startsWith("DESTRUYE")){
-                let funcion = stackPila.at(-1);
-                let mv = ins.marco_variable;
-                let marco = dibuja_marco(mv.x, mv.y, maxAnchoVariables, 5);
-                let nombre = dibuja_texto(mv.x_nombre, mv.y_nombre, mv.cont_nombre);
-                let valor = dibuja_texto(mv.x/1+1, mv.y/1+4, mv.cont_valor);
-                funcion.agregarVariable(mv.id, nombre, valor, marco);
-            }else if(ins.accion.startsWith("REGRESA")){
-                elimina_elemento(regresaPila);
-                let marco_ant = null;
-                if(stackPila.length > 0){
-                    marco_ant = stackPila.at(-1).obtenerMarco();
-                }
-                let marco_funcion = new DibujoFuncion(dibuja_marco(ins.elemento.x, ins.elemento.y));
-                let nombre_funcion = dibuja_texto(ins.elemento.x+1, ins.elemento.y+5, ins.elemento.nombre_funcion);
-                marco_funcion.agregarNombreFuncion(nombre_funcion);
-                for(let mv of ins.elemento.variables){
-                    let marco_variable = dibuja_marco(mv.x, mv.y, maxAnchoVariables, 5);
-                    let nombre = dibuja_texto(mv.x_nombre, mv.y_nombre, mv.cont_nombre);
-                    let valor = dibuja_texto(mv.x_valor, mv.y_valor, mv.cont_valor);
-                    marco_funcion.agregarVariable(mv.id, nombre, valor, marco_variable);
-                }
-                marco_funcion.flecha = dibuja_flecha(marco_ant, marco_funcion.marco, "flecha_negra");
-                stackPila.push(marco_funcion);
-            }else if(ins.accion.startsWith("ELIMINA")){
-                let x = ins.elemento.getAttribute("x");
-                let y = ins.elemento.getAttribute("y");
-                let texto = ins.elemento.textContent;
-                regresaPila = dibuja_texto(x, y, texto);
-            }
-            instrucciones_ant_pila.pop();
-            --paso;
-        }
-
-        async function calcular_marcos(){
-            instrucciones_ant_arbol = [];
-            limpiarSVG();
-            maxVariables = 0;
-            maxAnchoVariables = 0;
-            maxAnchoTotal = 0;
-            maxArgumentos = 0;
-            maxAnchoNodo = 0;
-            maxPila = 0;
-            instruccionesArbol = [];
-            instruccionesPila = [];
-            let stack = [];
-            funciones = [];
-            yMax = 500;
-            xMax = 500;
-            let resultado = obtenerRetorno(instrucciones.at(-1));
-            let mapaFunciones = new Map();
-            for (let ins of instrucciones) {
-                instruccionesPila.push(ins);
-                maxPila = Math.max(maxPila, stack.length);
-                if (ins.startsWith("LLAMA")) {
-                    let expresion = obtenerLlamada(ins);
-                    instruccionesArbol.push(ins);
-                    let actual = new NodoFuncion(expresion.variables.length);
-                    maxVariables = Math.max(maxVariables, actual.variables);
-                    maxArgumentos = Math.max(maxArgumentos, actual.variables);
-                    funciones.push(actual);
-                    if (stack.length > 0) {
-                        stack.at(-1).hijos.push(actual);
-                    }
-                    stack.push(actual);
-                    maxAnchoTotal = Math.max(medirTexto(expresion.nombreFuncion)[1] + 2, maxAnchoTotal);
-                    let contenido = expresion.nombreFuncion+" (";
-                    for(let j = 0; j<expresion.variables.length; ++j){
-                        const nombre = medirTexto(expresion.variables[j].nombre)[1] + 2;
-                        if(j<expresion.variables.length-1){
-                            contenido += expresion.variables[j].valor + ", ";
-                        }else{
-                            contenido += expresion.variables[j].valor;
-                        }
-                        const valor = medirTexto(expresion.variables[j].valor)[1] + 2;
-                        maxAnchoVariables = Math.max(maxAnchoVariables, valor, nombre);
-                    }
-                    contenido += ") ";
-                    actual.contenido = contenido;
-                    if(mapaFunciones.has(contenido)){
-                        mapaFunciones.set(contenido, mapaFunciones.get(contenido)+1);
-                    }else{
-                        mapaFunciones.set(contenido, 1);
-                    }
-                    maxAnchoNodo = Math.max(maxAnchoNodo, medirTexto(contenido)[1]+2);
-                    maxAnchoTotal = Math.max(maxAnchoTotal, maxVariables * (4 + maxAnchoVariables));
-                }
-                else if (ins.startsWith("DECLARA")) {
-                    let variable = obtenerDeclaracion(ins);
-                    const nombre = medirTexto(variable.nombre)[1] + 2;
-                    const valor = medirTexto(variable.valor)[1] + 2;
-                    maxAnchoVariables = Math.max(maxAnchoVariables, valor, nombre);
-                    stack.at(-1).variables += 1;
-                    maxVariables = Math.max(stack.at(-1).variables, maxVariables);
-                    maxAnchoTotal = Math.max(maxVariables * (4 + maxAnchoVariables), maxAnchoTotal);
-                }
-                else if (ins.startsWith("DESTRUYE")) {
-                    stack.at(-1).variables -= 1;
-                }
-                else if (ins.startsWith("REGRESA")) {
-                    maxAnchoRetorno = Math.max(maxAnchoRetorno, medirTexto(obtenerRetorno(ins))[1]);
-                    instruccionesArbol.push(ins);
-                    instruccionesPila.push("ELIMINA");
-                    stack.pop();
-                }else{
-                    instruccionesArbol.push(ins);
-                }
-            }
-            let resumen = "";
-            let rep = 0;
-            for(let [clave, valor] of mapaFunciones){
-                resumen += clave+": "+valor+"\n";
-                rep+=(valor-1);
-            }
-            document.getElementById("salida").value = 
-            "RESULTADO = "+resultado+"\n"+"Funciones repetidas: "+rep+"\n"+resumen;
-        }
-
-        function calcularCoordenadasArbol(nodo, fila, columnaRef, ancho, gap) {
-            let aumentoFila = 50+gap;
-            let aumentoColumna = ancho+1;
-            let numHijos = nodo.hijos.length;
-            let particion = Math.floor(numHijos / 2) + (numHijos % 2);
-            for (let i = 0; i < particion; ++i) {
-                columnaRef = calcularCoordenadasArbol(nodo.hijos[i], fila + aumentoFila, columnaRef, ancho, gap);
-            }
-            if (numHijos % 2 === 0) {
-                nodo.fila = fila;
-                nodo.columna = columnaRef;
-                columnaRef += aumentoColumna/2;
-            } else {
-                nodo.fila = fila;
-                nodo.columna = nodo.hijos[particion - 1].columna;
-            }
-            xMax = Math.max(xMax, nodo.columna+aumentoColumna);
-            yMax = Math.max(yMax, nodo.fila+6);
-            for (let i = particion; i < numHijos; ++i) {
-                columnaRef = calcularCoordenadasArbol(nodo.hijos[i], fila + aumentoFila, columnaRef, ancho, gap);
-            }
-            return columnaRef;
-        }
-
         async function dibujarArbol() {
+            limpiarSVG();
+            ejecucionId = 4;
             paso = 0;
             tipoDibujo = 1;
-            xMax = 500;
-            yMax = 500;
-            calcularCoordenadasArbol(funciones[0], 5, 5, Math.max(maxAnchoNodo, maxAnchoRetorno), 5);
+            if(funciones.length > 0){
+                calcularCoordenadasArbol(funciones[0], 5, 5, Math.max(maxAnchoNodo, maxAnchoRetorno), 5);
+            }
             svg.setAttribute("viewBox", `0 0 ${xMax} ${yMax}`);
-            limpiarSVG();
-            let idr = ejecucionId;
             itFuncion = 0;
-            detener = false;
+            instrucciones_ant_arbol = [];
             stackArbol = [];
+            detener = false;
             for (let ins of instruccionesArbol) {
                 if(detener){
                     break;
                 }
                 sig_ins_arbol(ins);
-                await retardo(ms, idr);
-            }
-        }
-
-        async function ant() {
-            ++ejecucionId;
-            detener = true;
-            if(tipoDibujo === 0 && instrucciones_ant_pila.length > 0){
-                ant_ins_pila(instrucciones_ant_pila.at(-1));
-            }
-            else if(tipoDibujo === 1 && instrucciones_ant_arbol.length > 0){
-                ant_ins_arbol(instrucciones_ant_arbol.at(-1));
+                await retardo(ms, 4);
             }
         }
 
@@ -617,17 +712,6 @@ value: `int fibonacci(int n) {
             }
             instrucciones_ant_arbol.pop();
             --paso;
-        }
-
-        async function sig() {
-            ++ejecucionId;
-            detener = true;
-            if(tipoDibujo === 0 && paso < instruccionesPila.length){
-                sig_ins_pila(instruccionesPila[paso]);
-            }
-            else if(tipoDibujo === 1 && paso < instruccionesArbol.length){
-                sig_ins_arbol(instruccionesArbol[paso]);
-            }
         }
 
         function sig_ins_arbol(ins){
@@ -660,12 +744,9 @@ value: `int fibonacci(int n) {
                     f.textoRetorno = dibuja_texto(x1, y1-5, valor, "textoRegreso");
                 }
                 instrucciones_ant_arbol.push(new ContrainstruccionArbol("R", f));
-            }else{
-                alert(ins);
             }
             ++paso;
         }
-
     </script>
 </body>
 </html>
