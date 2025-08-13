@@ -1,9 +1,9 @@
-int russianMult(int a, int b) {
+int mult_rusa(int a, int b) {
     if (a == 0){
         return 0;
     }
     if (a % 2 == 0){
-        return russianMult(a / 2, b * 2);
+        return mult_rusa(a / 2, b * 2);
     }
-    return b + russianMult(a / 2, b * 2);
+    return b + mult_rusa(a / 2, b * 2);
 }
