@@ -169,12 +169,17 @@
 
             <p>
                 Se permite que una función principal llame a otras funciones, siempre que estas 
-                se hayan declarado previamente. Sin embargo, para mantener la legibilidad del dibujo, 
-                se recomienda que el número total de llamadas de función no exceda las <code>256</code>, 
-                ya que a partir de esa cantidad la visualización se dificulta considerablemente.
+                se hayan declarado previamente. El límite de llamadas recursivas es de <code>256</code>, 
+                ya que a partir de esa cantidad la visualización se dificulta considerablemente.<br>
             </p>
 
             <p>
+                El formato de invocación es el siguiente: <br> 
+                <strong>Invocación</strong>: 
+                <code>
+                    [Nombre_funcion] [Valor_argumento1] 
+                    [Valor_argumento2] ... [Valor_argumento_n]
+                </code>
                 <strong>Procesar</strong>: interpreta el código y genera las instrucciones. <br>
                 <strong>Pila</strong>: muestra la simulación de las llamadas recursivas en formato de pila,
                 incluyendo el valor y el proceso de declaración/eliminación de las variables de cada 
@@ -187,6 +192,7 @@
                 La tecla <code>&larr;</code> equivale al botón <strong>Anterior</strong>, mientras que la tecla 
                 <code>&rarr;</code> equivale a <strong>Siguiente</strong> mientras el cursor está en el dibujo.
             </p>
+
         </aside>
     </div>
 
@@ -211,6 +217,7 @@
     </div>
 
     <script>
+        let totalLlamadas = 0;
         let funciones = [];
         let instrucciones = [];
         let instruccionesPila = [];
@@ -259,12 +266,17 @@
                         extraKeys: { Tab: cm => cm.replaceSelection("    ") }
                     });
             document.getElementById("procesar").onclick = async function() {
-                const codigo = editor.getValue();
-                const invocacion = document.getElementById("invocacion").value;
-                const textoSalida = traduce(codigo, invocacion);
-                instrucciones = textoSalida.trim().split("\n");
-                paso = 0;
-                await procesar();
+                try{
+                    const codigo = editor.getValue();
+                    const invocacion = document.getElementById("invocacion").value;
+                    const textoSalida = traduce(codigo, invocacion);
+                    instrucciones = textoSalida.trim().split("\n");
+                    paso = 0;
+                    await procesar();
+                }catch(error){
+                    alert("El calculo es excesivo computacionalmente.");
+                }
+                
             };
             document.getElementById("pila").onclick = dibujarPila;
             document.getElementById("arbol").onclick = dibujarArbol;
@@ -296,6 +308,7 @@
 
         async function procesar(){
             limpiarSVG();
+            document.getElementById("salida").value = "";
             maxVariables = 0;
             maxAnchoVariables = 0;
             maxAnchoTotal = 0;
@@ -313,11 +326,13 @@
             xMax = 500;
             yMax = 500;
             error = "";
+            totalLlamadas = 0;
             let resultado;
             let mapaFunciones = new Map();
             for (let ins of instrucciones) {
                 maxPila = Math.max(maxPila, stack.length);
                 if (ins.startsWith("LLAMA")) {
+                    if(++totalLlamadas > 256) break;
                     instruccionesPila.push(ins);
                     instruccionesArbol.push(ins);
                     let expresion = obtenerLlamada(ins);
@@ -376,7 +391,14 @@
                     error += ins+"\n";
                 }
             }
-            if(instruccionesPila.length === 0){
+            if(totalLlamadas > 256){
+                intrucciones = [];
+                instruccionesPila = [];
+                instruccionesArbol = [];
+                alert("El número de llamadas recursivas de 256 fue excedido. Intenta con un caso con menos llamadas recursivas.");
+
+            }
+            else if(instruccionesPila.length === 0){
                 document.getElementById("salida").value = error;
             }else{
                 let resumen = "";
