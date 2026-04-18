@@ -1,0 +1,167 @@
+<!doctype html>
+<html>
+   <head>
+      <meta charset="utf-8">
+      <style>
+         svg {
+            height: 50%;                        /* una cosa es el tamaño de despliegue */
+            aspect-ratio: 1 / 1;
+            border: 1px solid black;
+         }
+         
+         svg line {
+            marker-end: url(#marker12);
+         }
+         
+         .flecha_negra {
+            stroke-width: 2px;
+            stroke: rgb(255, 51, 51);
+         }
+         
+         .cuadrado_rojo {
+            fill: red;
+         }
+         
+         .texto_verde {
+            font-family: Arial;
+            font-size: 57px;
+            fill: green;
+         }
+         
+         .caja_marco {
+            fill: none;
+            stroke-width: 10px;
+            stroke: black;
+         }
+         .caja_letrero1 {
+            fill: red;
+         }
+         .caja_letrero2 {
+            fill: blue;
+         }
+      </style>
+   </head>
+   <body onload="ejemplo( )">
+      <svg id="svg" viewbox="0 0 500 500">      <!-- y otra cosa completamente independiente son las "unidades" internas de la zona de dibujo -->
+         <marker id="triangle" viewBox="0 0 10 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="7" markerHeight="5" orient="auto">
+            <path d="M 0,0 L 10,5 L 0,10 Z" />
+         </marker>
+       <marker
+       style="overflow:visible"
+       id="ArrowWideHeavy"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="Wide, heavy arrow"
+       markerWidth="1.5"
+       markerHeight="1.5"
+       viewBox="0 0 1 1"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid">
+      <path
+         style="fill:context-stroke;fill-rule:evenodd;stroke:none"
+         d="m 1,0 -3,3 h -2 l 3,-3 -3,-3 h 2 z"
+         id="path5" />
+      </marker>
+      <marker
+       markerWidth="10"
+       markerHeight="9.06411703"
+       refX="42.740033"
+       refY="38.740066"
+       orient="auto"
+       id="marker12"
+       viewBox="0 0 85.4800668 77.48013296"
+       preserveAspectRatio="xMidYMid">
+      <path
+         style="fill:context-stroke;fill-rule:evenodd;stroke:none"
+         d="M 0.94487997,76.535342 C 27.401573,57.637704 58.07874,46.299122 84.535436,38.740066 58.07874,31.181011 27.401573,19.842429 0.94487997,0.94479089 0.94487997,16.062901 24.062991,34.960539 27.842519,38.740066 24.062991,42.519594 0.94487997,61.417232 0.94487997,76.535342 Z"
+         id="path11-5-2-7"
+         sodipodi:nodetypes="ccccc" />
+      </marker>
+      </svg><br>     
+      <script>
+         let svg = document.getElementById("svg");
+         let ms = 333;
+            
+         function coordenadas_elemento(obj) {
+            return [ Number(obj.getAttribute("x")), Number(obj.getAttribute("y")) ];
+         }
+
+         function dibuja_cuadrado(x, y, w, h, clase = "") {
+            let obj = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            obj.setAttribute("class", clase);
+            obj.setAttribute("x", x);
+            obj.setAttribute("y", y);
+            obj.setAttribute("width", w);
+            obj.setAttribute("height", h);
+            return svg.appendChild(obj);
+         }
+         
+         function dibuja_texto(x, y, texto, clase = "") {
+            let obj = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            obj.setAttribute("class", clase);
+            obj.setAttribute("x", x);
+            obj.setAttribute("y", y);
+            obj.textContent = texto;
+            return svg.appendChild(obj);
+         }
+         
+         function dibuja_flecha(obj1, obj2, clase = "") {
+            let [x1, y1] = coordenadas_elemento(obj1);
+            let [x2, y2] = coordenadas_elemento(obj2);
+            let obj = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            obj.setAttribute("class", clase);
+            obj.setAttribute("x1", x1);
+            obj.setAttribute("y1", y1);
+            obj.setAttribute("x2", x2);
+            obj.setAttribute("y2", y2);
+            return svg.appendChild(obj);
+         }
+         
+        
+         function dibuja_funcion_caja(x, y, nombre, clase = "") {
+            return [
+               dibuja_cuadrado(x, y, 200, 200, clase + "_marco"),
+               dibuja_texto(x + 50, y + 50, nombre, clase + "_letrero1"),
+               dibuja_texto(x + 100, y + 100, nombre, clase + "_letrero2")
+            ];
+         }
+         
+         function elimina_elemento(obj) {
+            if (Array.isArray(obj)) {
+               for (let elem of obj) {
+                  elem.remove( );
+               }
+            } else {
+               obj.remove( );
+            }
+         }
+         
+         function retardo(ms) {
+            return new Promise(function (resolver) {
+               retardo_resolver = resolver;
+               setTimeout(( ) => resolver( ), ms);
+            });
+         }
+         
+         async function ejemplo( ) {
+            let c = dibuja_cuadrado(50, 50, 100, 100, "cuadrado_rojo");
+            await retardo(ms);
+            let t = dibuja_texto(200, 200, "hola", "texto_verde");
+            await retardo(ms);
+            let f = dibuja_flecha(c, t, "flecha_negra");
+            await retardo(ms);
+            elimina_elemento(f);
+            await retardo(ms);
+            elimina_elemento(t);
+            await retardo(ms);
+            elimina_elemento(c);
+            await retardo(ms);
+            let x = dibuja_funcion_caja(0, 0, "f", "caja");
+            await retardo(ms);
+            elimina_elemento(x);
+         }
+      </script>
+   </body>
+</html>

@@ -1,0 +1,4 @@
+int f(){
+    double b = 1;
+    return b;
+}

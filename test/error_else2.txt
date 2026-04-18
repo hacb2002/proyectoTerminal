@@ -1,0 +1,7 @@
+int f(){
+    int a = 1, b = 3;
+    else{
+        return a;
+    }
+    return 0;
+}

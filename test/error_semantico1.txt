@@ -1,0 +1,7 @@
+int g(){
+    return 100;
+}
+int f(){
+    int a = 4+g;
+    return a;
+}

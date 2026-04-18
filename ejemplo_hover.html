@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+   <head>
+      <meta charset="utf-8">
+      <style>
+         svg {
+            height: 50%;
+            aspect-ratio: 1 / 1;
+            border: 1px solid black;
+         }
+         
+         .cuadrado_rojo {
+            fill: red;
+            stroke-width: 0px;
+            stroke: black;
+         }
+         
+         .cuadrado_azul {
+            fill: azul;
+            stroke-width: 0px;
+            stroke: black;
+         }
+         
+         svg .seleccionado {
+            fill: white;
+            stroke-width: 3px;
+            stroke: green;
+         }
+         
+         svg .animable {
+            transition: all 0.333s linear;
+         }
+      </style>
+   </head>
+   <body onload="ejemplo( )">
+      <svg id="svg" viewbox="0 0 500 500"></svg>    
+      <script>
+         let svg = document.getElementById("svg");
+            
+         function prepara_animacion_grupo(obj, grupo) {
+            if (grupo != "") {
+               obj.classList.add("animable", grupo);
+               obj.onmouseover = obj.onmouseout = function( ) {
+                  for (let nodo of document.getElementsByClassName(grupo)) {
+                     nodo.classList.toggle("seleccionado");
+                  }
+               };
+            }
+         }
+            
+         function dibuja_cuadrado(x, y, w, h, clase = "", grupo = "") {
+            let obj = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            obj.setAttribute("class", clase);
+            obj.setAttribute("x", x);
+            obj.setAttribute("y", y);
+            obj.setAttribute("width", w);
+            obj.setAttribute("height", h);
+            prepara_animacion_grupo(obj, grupo);
+            return svg.appendChild(obj);
+         }
+
+         async function ejemplo( ) {
+            let a = dibuja_cuadrado(50, 50, 50, 50, "cuadrado_rojo", "grupo1");
+            let b = dibuja_cuadrado(50, 150, 50, 50, "cuadrado_azul", "grupo1");
+            
+            let x = dibuja_cuadrado(150, 50, 50, 50, "cuadrado_rojo", "grupo2");
+            let w = dibuja_cuadrado(150, 150, 50, 50, "cuadrado_azul", "grupo2");
+         }
+      </script>
+   </body>
+</html>

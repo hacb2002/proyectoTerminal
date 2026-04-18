@@ -1,0 +1,12 @@
+int potencia(int a, int b){
+    if(b == 0){
+        return 1;
+    }else{
+        int t = potencia(a, b/2);
+        if(b % 2 == 0){
+            return t*t;
+        }else{
+            return a*t*t;
+        }
+    }
+}

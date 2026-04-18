@@ -1,0 +1,9 @@
+int f(int a, int b){
+    if(a < b){
+        int aux = 25;
+        if(a+b+aux>100){
+            return a*b*aux;
+        }
+    }
+    return f(f(a+1, b), b);
+}

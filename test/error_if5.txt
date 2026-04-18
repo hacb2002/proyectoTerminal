@@ -1,0 +1,6 @@
+int f(){
+    if(){
+        return -1;
+    }
+    return 0;
+}

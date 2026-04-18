@@ -1,0 +1,11 @@
+int f(int a, int b){
+    if(a == b){
+        int a = 5;
+        int b = 10;
+        if(a != b){
+            int a = 1;
+            int b = 10;
+            return a+b;
+        }
+    }
+}

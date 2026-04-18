@@ -1,0 +1,4 @@
+int f(){
+    int int = 10;
+    return 0;
+}

@@ -1,0 +1,5 @@
+int f(){
+    int g = 10;
+    int res = 1+g();
+    return res;
+}

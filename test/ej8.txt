@@ -1,0 +1,6 @@
+int suma_n_enteros(int n) {
+    if (n == 0){
+        return 0;
+    }
+    return n + suma_n_enteros(n - 1);
+}

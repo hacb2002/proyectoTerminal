@@ -1,0 +1,3 @@
+int f(){
+    int variable$9 = 1;
+}

@@ -1,0 +1,7 @@
+int f(){
+    int a = 0, b = 2, c = 3;
+    if(a > 0 && 2/a > 5){
+        return 2/a;
+    }
+    return -1;
+}
